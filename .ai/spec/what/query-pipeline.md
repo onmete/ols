@@ -138,6 +138,22 @@ LLMRequest:
 | **lightspeed-operator** | Generates `olsconfig.yaml` with provider credentials, RAG paths, MCP servers, quota config, tool filtering config, skills config, per-model `reasoning_config` |
 | **lightspeed-rag-content** | BYOK tool image for customer custom FAISS indexes |
 
+## E2E Test Coverage — Modes
+
+### Troubleshooting Scenario Tests
+
+Scenario-based e2e tests verify that `mode=troubleshooting` produces structurally correct responses when diagnosing real cluster problems. Tests are gated behind the `cluster_scenario` pytest marker and require `oc` access to a live OpenShift cluster.
+
+Each test:
+1. Injects a broken cluster state via setup script
+2. Queries OLS with `mode=troubleshooting`
+3. Asserts HTTP 200, non-empty response, and presence of problem-domain keywords
+4. Cleans up cluster state
+
+Scenarios are defined under `eval/troubleshooting/scenarios/`. The test module is `tests/e2e/test_troubleshooting_scenarios.py`.
+
+[PLANNED] LLM-graded response quality evaluation via `lightspeed-eval` will layer on top of these structural tests.
+
 ## Planned Changes
 
 | Ticket | Summary |
