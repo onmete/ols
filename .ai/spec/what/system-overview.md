@@ -26,8 +26,8 @@ Autonomous cluster operations. Alerts or user requests trigger multi-phase AI wo
 
 The hub layer for fleet-scale operations. A central hub cluster manages spoke clusters, aggregating alerts and proposals across the fleet, and providing a single pane of glass for multicluster AI-assisted operations.
 
-9. **lightspeed-hub** (Go/kubebuilder) — Hub operator. Manages `SpokeCluster` CRs, coordinates fleet-wide agentic operations, automates spoke onboarding (adapter deployment, credential configuration, health monitoring). Guide: `lightspeed-hub/AGENTS.md`
-10. **lightspeed-hub-ui** (TypeScript/React) — Console plugin for the hub. Multicluster dashboard for viewing spoke health, fleet-wide proposals, and spoke management. Guide: `lightspeed-hub-ui/AGENTS.md`
+9. **lightspeed-hub** [PLANNED] (Go/kubebuilder) — Hub operator. Manages `SpokeCluster` CRs, coordinates fleet-wide agentic operations, automates spoke onboarding (adapter deployment, credential configuration, health monitoring). Guide: `lightspeed-hub/AGENTS.md`
+10. **lightspeed-hub-ui** [PLANNED] (TypeScript/React) — Console plugin for the hub. Multicluster dashboard for viewing spoke health, fleet-wide proposals, and spoke management. Guide: `lightspeed-hub-ui/AGENTS.md`
 11. **lightspeed-otel-collector** (Go) — Custom OpenTelemetry collector. Collects and forwards observability data (metrics, traces, logs) across the OLS fleet. Spec: `lightspeed-otel-collector/.ai/spec/README.md`
 
 ### Tooling
