@@ -165,9 +165,8 @@ Ships one artifact: a container image with the custom Collector binary.
 
 ### When `spec.templog: true` (or absent)
 
-1. Add `templogs` schema creation to the Postgres bootstrap script
-2. Deploy the custom Collector: Deployment, Service, ConfigMap, NetworkPolicy
-3. Set OTLP log endpoint env var on agentic-operator and sandbox pods, pointing at the Collector service: `<collector-service>.<namespace>.svc:4317`
+1. Deploy the custom Collector: Deployment, Service, ConfigMap, NetworkPolicy (the Collector's `postgres_admin` extension creates the `templogs` schema at startup — not via the Postgres bootstrap script)
+2. Set OTLP log endpoint env var on agentic-operator and sandbox pods, pointing at the Collector service: `<collector-service>.<namespace>.svc:4317`
 
 ### When `spec.templog: false`
 
@@ -211,7 +210,7 @@ Ships one artifact: a container image with the custom Collector binary.
 | Repo | Templog Responsibilities |
 |---|---|
 | **lightspeed-otel-collector** | OCB manifest, custom `postgresexporter` Go code, Dockerfile, Konflux build pipeline. Ships the Collector container image. |
-| **lightspeed-operator** | Read `AgenticOLSConfig.spec.templog`. Deploy/remove Collector Deployment, Service, ConfigMap, NetworkPolicy. Add `templogs` schema to Postgres bootstrap. Wire OTLP log endpoint to agentic pods. CRD change: add `spec.templog` to `AgenticOLSConfig`. |
+| **lightspeed-operator** | Read `AgenticOLSConfig.spec.templog`. Deploy/remove Collector Deployment, Service, ConfigMap, NetworkPolicy (the Collector's `postgres_admin` extension creates the `templogs` schema at startup). Wire OTLP log endpoint to agentic pods. CRD change: add `spec.templog` to `AgenticOLSConfig`. |
 | **lightspeed-agentic-operator** | Add OTLP log emission when endpoint is configured. Add `agentic.openshift.io/templog-cleanup` finalizer to AgenticRuns. Finalizer handler: delete rows from `templogs.logs` on AgenticRun deletion. |
 | **lightspeed-agentic-sandbox** | Add OTLP log emission when endpoint is configured. |
 
@@ -221,7 +220,7 @@ Ships one artifact: a container image with the custom Collector binary.
 |---|---|---|
 | lightspeed-operator | `what/templog.md` | Collector lifecycle reconciliation, schema bootstrap, pod wiring |
 | lightspeed-agentic-operator | `what/crd-api.md` (update) | Add `spec.templog` to `AgenticOLSConfig` |
-| lightspeed-operator | `what/postgres.md` (update) | Add `templogs` schema to bootstrap |
+| lightspeed-operator | `what/postgres.md` (update) | Document that the Collector's `postgres_admin` extension creates the `templogs` schema (not the Postgres bootstrap script) |
 | lightspeed-agentic-operator | `what/templog.md` | Finalizer implementation, OTLP log emission, Postgres cleanup |
 | lightspeed-agentic-operator | `what/audit-logging.md` (update) | Add OTLP log emission (dual: stdout + OTLP when endpoint configured) |
 | lightspeed-agentic-sandbox | `what/audit-logging.md` (update) | Add OTLP log emission (dual: stdout + OTLP when endpoint configured) |
@@ -236,6 +235,6 @@ Ships one artifact: a container image with the custom Collector binary.
 
 | Ticket | Summary |
 |---|---|
-| OLS-3295 | Rename `Proposal` → `AgenticRun` across templog finalizer, cleanup, and audit event references |
+| [DONE: OLS-3295] | Rename `Proposal` → `AgenticRun` across templog finalizer, cleanup, and audit event references |
 | OLS-3328 | Implement temporary audit log storage |
 | OLS-3696 | Rename `trace_id` → `agentic_run_id`, add `phase` column, update admin API. See design spec `docs/superpowers/specs/2026-07-22-templog-phase-storage.md`. |

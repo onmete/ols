@@ -377,7 +377,7 @@ Each child repo needs an audit logging spec with implementation details. The par
 | Ticket | Summary |
 |---|---|
 | [PLANNED] | Auto-detection of OpenShift logging OTLP endpoint |
-| OLS-3295 | Rename `Proposal` → `AgenticRun`, `ProposalApproval` → `AgenticRunApproval` across audit events and OTEL spans |
+| [DONE: OLS-3295] | Rename `Proposal` → `AgenticRun`, `ProposalApproval` → `AgenticRunApproval` across audit events and OTEL spans |
 | OLS-3328 | Temporary audit log storage in PostgreSQL via custom OTel Collector (see `templog.md`) |
 | OLS-3493 | OTel GenAI semantic conventions alignment (this spec update) |
 | OLS-3696 | Templog phase storage — OTLP log records must carry `agenticrun.phase` attribute. Collector maps it to `phase` column. `trace_id` column renamed to `agentic_run_id`. See design spec `docs/superpowers/specs/2026-07-22-templog-phase-storage.md`. |

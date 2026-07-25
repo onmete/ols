@@ -75,6 +75,6 @@ The following child repo specs describe behavior that this spec supersedes or au
 
 | Ticket | Summary |
 |---|---|
-| OLS-3295 | Rename `Proposal` → `AgenticRun`, `ProposalApproval` → `AgenticRunApproval` across CRDs, RBAC resources, and SA naming |
+| [DONE: OLS-3295] | Rename `Proposal` → `AgenticRun`, `ProposalApproval` → `AgenticRunApproval` across CRDs, RBAC resources, and SA naming |
 | [PLANNED] | Namespace-scoped approval delegation: allow non-cluster-admins to approve runs scoped to namespaces where they have equivalent RBAC. Requires either a ValidatingAdmissionWebhook with SubjectAccessReview or a more granular ClusterRole structure. |
 | [PLANNED] | Analysis cluster-reader SA: a fixed `lightspeed-analyst` ClusterRoleBinding with read-only cluster access for analysis steps that need to query cluster state directly. Separate from per-run execution SA. |
