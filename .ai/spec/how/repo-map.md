@@ -41,6 +41,8 @@ Lookup table: concern → repo(s) → spec file(s). Use this to find where to go
 | Security (RBAC, NetworkPolicy) | lightspeed-operator | `what/security.md` |
 | Config generation (olsconfig.yaml) | lightspeed-operator | `how/config-generation.md` |
 | Deployment generation | lightspeed-operator | `how/deployment-generation.md` |
+| CLI (oc-ols) | lightspeed-operator | `how/cli.md` |
+| CLI binary distribution | lightspeed-operator | `how/cli-distribution.md` |
 
 ## Classic OLS — Console
 
