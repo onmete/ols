@@ -239,7 +239,7 @@ If `spec.audit` is absent entirely, behavior is `enabled: true` with no-op OTLP 
 
 ### Propagation
 
-- The lightspeed-operator reads `OLSConfig.spec.audit` and generates the corresponding config in `olsconfig.yaml` for lightspeed-service to consume.
+- The lightspeed-operator reads `OLSConfig.spec.audit` and generates the corresponding config in `olsconfig.yaml` for lightspeed-service to consume. **OLS-3737**: OTEL endpoint injection into `olsconfig.yaml` is currently disabled until e2e tests prove the collector pipeline works; the service uses a no-op tracer when the otel section is absent.
 - The agentic-operator reads `AgenticOLSConfig.spec.audit` directly and passes the OTEL endpoint to the sandbox (env var or config mount).
 - The stdout exporter always emits when audit is enabled — this is what any log aggregator (Loki, Splunk, Fluentd, etc.) reads from container logs.
 - The OTLP exporter is additive — gives distributed tracing visualization (Jaeger/Tempo) when an endpoint is configured.
