@@ -64,7 +64,7 @@ End-to-end flow for processing a user question: from console submission through 
 ### Stage 8 — Response Storage & Quota (lightspeed-service)
 
 29. Both text and reasoning chunks are accumulated into the response string during streaming. Reasoning content is included in the stored response so the model has access to its own reasoning within the current conversation turn.
-30. The conversation turn (history + tool interactions) is stored in the cache as a plain-string `AIMessage`. No structured reasoning blocks or provider-specific signatures are preserved in the cache. [PLANNED: OLS-3442 — revisit cache schema if evals show structured reasoning storage improves multi-turn quality]
+30. The conversation turn (history + tool interactions) is stored in the cache as a plain-string `AIMessage`. No structured reasoning blocks or provider-specific signatures are preserved in the cache.
 31. If data collection is enabled, the full transcript is stored (provider, model, user, query, response, RAG chunks, tools used).
 32. Tokens are deducted from the user's quota (per-user and per-cluster limiters).
 33. The `end` event is emitted with referenced documents, token counts, and remaining quota.
@@ -72,7 +72,7 @@ End-to-end flow for processing a user question: from console submission through 
 ### Response Rendering (lightspeed-console)
 
 34. The console renders streamed tokens as they arrive, displays referenced documents, and visualizes tool call results. Reasoning events are already rendered by the console — no changes needed.
-35. The conversation is added to the user's history sidebar.
+35. The console displays the response in the current session. (No persistent history sidebar -- each session is independent.)
 
 ## Integration Contracts
 
@@ -103,6 +103,8 @@ End-to-end flow for processing a user question: from console submission through 
 | `history_compression_start/end` | — | History being compressed |
 | `end` | referenced_documents, token counts | Stream complete |
 | `error` | status_code, response, cause | Error occurred |
+
+Note: The console currently consumes `reasoning` and `skill_selected` events but does not render them in the UI.
 
 ### Request Format
 
@@ -143,7 +145,7 @@ LLMRequest:
 | OLS-2825 | Consolidate context window token budget into single module |
 | OLS-2840 | Refactor DocsSummarizer: extract ToolCallingAgent class |
 | OLS-2898 | Raise `max_iterations` to 50 |
-| OLS-2521 | Support Google Gemini as direct LLM provider |
-| OLS-2776 | Support Anthropic as direct LLM provider |
+| ~~OLS-2521~~ | ~~Support Google Gemini as direct LLM provider~~ [DONE] |
+| ~~OLS-2776~~ | ~~Support Anthropic as direct LLM provider~~ [DONE] |
 | OLS-1660 | Llama Stack integration |
 | OLS-3442 | Reasoning token support: per-model `reasoningConfig` for all providers, streaming accumulation fix, vLLM `ChatVLLMReasoning` subclass |

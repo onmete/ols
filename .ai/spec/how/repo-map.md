@@ -41,6 +41,8 @@ Lookup table: concern → repo(s) → spec file(s). Use this to find where to go
 | Security (RBAC, NetworkPolicy) | lightspeed-operator | `what/security.md` |
 | Config generation (olsconfig.yaml) | lightspeed-operator | `how/config-generation.md` |
 | Deployment generation | lightspeed-operator | `how/deployment-generation.md` |
+| CLI (oc-ols) | lightspeed-operator | `how/cli.md` |
+| CLI binary distribution | lightspeed-operator | `how/cli-distribution.md` |
 
 ## Classic OLS — Console
 
@@ -78,7 +80,7 @@ Lookup table: concern → repo(s) → spec file(s). Use this to find where to go
 | Concern | Repo | Spec Files |
 |---|---|---|
 | AgenticRun list/detail UI | lightspeed-agentic-console | `what/run-lifecycle.md` |
-| Dynamic configuration components | lightspeed-agentic-console | `what/dynamic-components.md` |
+| Dynamic configuration components | lightspeed-agentic-console | `what/dynamic-components.md` [PLANNED -- file does not yet exist] |
 | Configuration UI (approval policies, providers, agents) | lightspeed-agentic-console | `what/configuration.md` |
 | Console plugin system integration | lightspeed-agentic-console | `how/console-plugin-system.md` |
 | K8s data fetching layer | lightspeed-agentic-console | `how/k8s-data-layer.md` |
@@ -103,6 +105,8 @@ Lookup table: concern → repo(s) → spec file(s). Use this to find where to go
 
 ## Multicluster OLS — Hub
 
+_Note: these repositories are not yet cloned in this workspace. References below are aspirational._
+
 | Concern | Repo | Spec Files |
 |---|---|---|
 | Hub operator system overview | lightspeed-hub | `what/system-overview.md` |
@@ -114,6 +118,8 @@ Lookup table: concern → repo(s) → spec file(s). Use this to find where to go
 | Hub-initiated proposals | lightspeed-hub | `what/fleet-coordination.md` |
 
 ## Multicluster OLS — Hub UI
+
+_Note: these repositories are not yet cloned in this workspace. References below are aspirational._
 
 | Concern | Repo | Spec Files |
 |---|---|---|
@@ -131,11 +137,18 @@ Lookup table: concern → repo(s) → spec file(s). Use this to find where to go
 | Spoke-to-hub telemetry forwarding | lightspeed-otel-collector | `what/pipeline.md` |
 | Cluster identity labeling | lightspeed-otel-collector | `what/pipeline.md` |
 
+## Agentic OLS — Event Adapter (Prototype)
+
+| Concern | Repo | Spec Files |
+|---|---|---|
+| Jira event polling & AgenticRun creation | lightspeed-team-harness | `what/event-adapter.md` |
+| Triage skill packaging (OCI) | lightspeed-team-harness | `what/event-adapter.md` |
+
 ## Tooling
 
 | Concern | Repo | Spec Files |
 |---|---|---|
-| Shared AI coding skills | lightspeed-team-harness | `AGENTS.md` (no `.ai/spec/` yet) |
+| Shared AI coding skills | lightspeed-team-harness | `AGENTS.md` |
 | Load testing & metrics | ols-load-generator | `README.md` (no `.ai/spec/` yet) |
 
 ## Cross-Repo Features
@@ -150,4 +163,4 @@ These features span multiple repos. See the parent `what/` files for end-to-end 
 | Deployment lifecycle | `what/deployment-lifecycle.md` | operator, service, console, alerts-adapter [PLANNED: OLS-3236], agentic-console [PLANNED: OLS-3236] |
 | Query pipeline | `what/query-pipeline.md` | console, service, operator, rag-content |
 | Compliance audit logging | `what/audit-logging.md` | agentic-operator, agentic-sandbox, service, operator, agentic-console |
-| Temporary audit log storage | `what/templog.md` | lightspeed-otel-postgres-collector, operator, agentic-operator, agentic-sandbox |
+| Temporary audit log storage | `what/templog.md` | lightspeed-otel-collector, operator, agentic-operator, agentic-sandbox |

@@ -6,20 +6,26 @@ Multi-phase AI workflows that diagnose and remediate cluster issues. An alert fi
 
 ### Phase 1: Trigger
 
+An external event source creates an `AgenticRun` CR to initiate a workflow. Any authorized adapter, controller, CLI, or API client can create AgenticRuns — the operator reconciles them regardless of origin.
+
+**Example — alerts-adapter (AlertManager events):**
+
 1. The alerts-adapter polls OpenShift AlertManager for firing alerts on a configurable interval.
 2. For each firing alert, the adapter computes a fingerprint (8-char prefix) and checks for an existing AgenticRun CR with a deterministic name derived from the fingerprint.
 3. If no matching AgenticRun exists and the cooldown window has elapsed since the last AgenticRun for that fingerprint, the adapter creates a new `AgenticRun` CR in the alert's namespace with the alert metadata and a templated remediation request.
 4. The adapter is create-only — it never updates or deletes AgenticRuns after creation.
+
+> Other adapters (e.g., the Jira event adapter prototype) follow the same pattern. See each adapter's own `.ai/spec/` for details.
 
 ### Phase 2: Analysis
 
 5. The agentic-operator detects the new AgenticRun CR and adds a finalizer.
 6. The operator checks the cluster-scoped `ApprovalPolicy` (singleton named "cluster") for the analysis approval gate.
 7. If approval is required, the operator waits for an `AgenticRunApproval` CR granting analysis. If automatic, it proceeds immediately.
-8. The operator provisions a sandbox pod (bare-pod or sandbox-claim mode) using a derived `SandboxTemplate`.
-9. The operator calls `POST /v1/agent/run` on the sandbox with the analysis request, output schema for remediation options, and context (target namespaces).
-10. The sandbox executes the request using the configured LLM provider (Claude, Gemini, or OpenAI) and returns structured remediation options. Each option contains a concrete remediation script (ordered bash commands using kubectl/oc) and RBAC requirements derived from those commands. The analysis prompt instructs the agent to inspect cluster state with kubectl/oc before diagnosing, and to derive RBAC by tracing every command in its script.
-11. The operator stores the result in an immutable `AnalysisResult` CR owned by the AgenticRun.
+8. The operator creates an input ConfigMap with the analysis query, output schema, context, and a pre-filled Result CR template. It then provisions a sandbox pod (bare-pod or sandbox-claim mode) with the ConfigMap mounted at `/input/`. [OLS-3066]
+9. The sandbox pod runs the agent autonomously (batch execution — no HTTP). The agent executes using the configured LLM provider (Anthropic, Gemini, or OpenAI) and produces structured remediation options. Each option contains a concrete remediation script (ordered bash commands using kubectl/oc) and RBAC requirements derived from those commands. The analysis prompt instructs the agent to inspect cluster state with kubectl/oc before diagnosing, and to derive RBAC by tracing every command in its script. [OLS-3066]
+10. The sandbox creates the `AnalysisResult` CR via `oc create` + `oc patch --subresource=status`, merging the agent output into the operator-provided template. The operator watches for this CR via `Owns()` and is automatically enqueued when it appears. [OLS-3066]
+11. The operator reads the `AnalysisResult` CR and updates the AgenticRun conditions accordingly.
 12. The analysis output includes an `actionRequired` boolean and a top-level `Diagnosis` (summary, confidence, rootCause). When `actionRequired` is false, the `Options` array may be empty (`minItems: 0`); the top-level `Diagnosis` captures the agent's explanation of why no remediation is needed.
 13. When the operator stores an `AnalysisResult` with `actionRequired=false`, it sets the `Analyzed` condition to `True` with reason `NoActionRequired`. The AgenticRun auto-transitions to the `NoActionRequired` terminal phase, bypassing Proposed/Approval/Execution/Verification entirely.
 
@@ -32,9 +38,9 @@ Multi-phase AI workflows that diagnose and remediate cluster issues. An alert fi
 ### Phase 4: Execution
 
 17. The operator materializes RBAC (ServiceAccount, Role, RoleBinding) scoped to the approved option's requirements.
-18. The operator calls the sandbox with the execution request, passing the approved option and RBAC context. The execution prompt instructs the agent to follow the concrete bash script exactly and to dry-run mutation commands with `--dry-run=server` before executing.
+18. The operator creates an input ConfigMap with the execution query (approved option, RBAC context) and provisions a sandbox pod. The execution prompt instructs the agent to follow the concrete bash script exactly and to dry-run mutation commands with `--dry-run=server` before executing. [OLS-3066]
 19. The sandbox agent executes the remediation actions by running the approved bash commands in order.
-20. The operator stores the result in an immutable `ExecutionResult` CR.
+20. The sandbox creates the `ExecutionResult` CR via `oc`, and the operator processes it upon watch notification. [OLS-3066]
 
 ### Phase 5: Verification
 
@@ -60,23 +66,27 @@ Multi-phase AI workflows that diagnose and remediate cluster issues. An alert fi
 
 | CRD | Scope | Owner | Purpose |
 |---|---|---|---|
-| `AgenticRun` | Namespace | alerts-adapter (creates), operator (reconciles) | Workflow state machine. Immutable spec, mutable revisionFeedback, status conditions. |
+| `AgenticRun` | Namespace | external adapters/clients (creates), operator (reconciles) | Workflow state machine. Immutable spec, mutable revisionFeedback, status conditions. |
 | `AgenticRunApproval` | Namespace | console (creates) | Approval decisions per stage, option selection, max attempts override. Owned by AgenticRun. |
 | `ApprovalPolicy` | Cluster (singleton "cluster") | admin (creates) | Automatic/Manual gates per stage, max attempts, max concurrent runs. |
 | `Agent` | Cluster | admin (creates) | LLM provider selection and model name. |
 | `LLMProvider` | Cluster | admin (creates) | Provider type, credentials secret, URL, region/project. |
-| `AnalysisResult` | Namespace | operator (creates) | Immutable analysis output. Owned by AgenticRun. |
-| `ExecutionResult` | Namespace | operator (creates) | Immutable execution output. Owned by AgenticRun. |
-| `VerificationResult` | Namespace | operator (creates) | Immutable verification output. Owned by AgenticRun. |
-| `EscalationResult` | Namespace | operator (creates) | Immutable escalation output. Owned by AgenticRun. |
+| `AnalysisResult` | Namespace | sandbox (creates via `oc`), operator (reads) [OLS-3066] | Immutable analysis output. Owned by AgenticRun. |
+| `ExecutionResult` | Namespace | sandbox (creates via `oc`), operator (reads) [OLS-3066] | Immutable execution output. Owned by AgenticRun. |
+| `VerificationResult` | Namespace | sandbox (creates via `oc`), operator (reads) [OLS-3066] | Immutable verification output. Owned by AgenticRun. |
+| `EscalationResult` | Namespace | sandbox (creates via `oc`), operator (reads) [OLS-3066] | Immutable escalation output. Owned by AgenticRun. |
 
-### HTTP — Sandbox Run API
+### [OLS-3066] Batch Sandbox I/O (replaces HTTP)
 
-| Endpoint | Method | Request | Response |
-|---|---|---|---|
-| `/v1/agent/run` | POST | `RunRequest`: query, systemPrompt, outputSchema, context, timeout_ms | `RunResponse`: success, summary, plus fields from agent output JSON |
+The operator and sandbox communicate via Kubernetes objects, not HTTP:
 
-Context envelope varies by phase:
+| Direction | Mechanism | Content |
+|---|---|---|
+| Operator → Sandbox (input) | ConfigMap volume mount at `/input/` | `query` (rendered prompt), `output-schema` (JSON schema), `context` (targetNamespaces, previousAttempts, approvedOption, executionResult), `result-template` (pre-filled Result CR) |
+| Sandbox → Operator (output) | Result CR created via `oc create` + `oc patch --subresource=status` | Same Result CR status fields as before (options, diagnosis, actionsTaken, checks, conditions, failureReason) |
+| Sandbox → Operator (errors) | `/dev/termination-log` (sandbox failures) or Result CR with `failureReason` (agent failures) | Error message string |
+
+Context envelope in the `context` ConfigMap key varies by phase:
 - Analysis: target namespaces
 - Execution: approved option (diagnosis, actions, RBAC), target namespaces
 - Verification: execution result, previous attempts, attempt metadata
@@ -94,19 +104,20 @@ Context envelope varies by phase:
 | Repo | Owns |
 |---|---|
 | **lightspeed-agentic-alerts-adapter** | Alert polling, fingerprint-based dedup, cooldown enforcement, AgenticRun CR creation (create-only) |
-| **lightspeed-agentic-operator** | AgenticRun reconciliation, approval gate enforcement, sandbox provisioning, RBAC materialization, agent HTTP calls, result CR creation, phase derivation, finalizer cleanup |
-| **lightspeed-agentic-sandbox** | `/v1/agent/run` endpoint, LLM provider abstraction (Claude/Gemini/OpenAI adapters), structured output handling, tool execution, event logging |
+| **lightspeed-agentic-operator** | AgenticRun reconciliation, approval gate enforcement, sandbox provisioning (ConfigMap input + pod creation), RBAC materialization, Result CR processing (reads CRs created by sandbox), phase derivation, finalizer cleanup [OLS-3066] |
+| **lightspeed-agentic-sandbox** | Batch agent execution (reads `/input/`, runs LLM, creates Result CR via `oc`), LLM provider abstraction (DeepAgents/Anthropic, Gemini, OpenAI adapters), structured output handling, tool execution, event logging [OLS-3066] |
 | **lightspeed-agentic-console** | AgenticRun list/detail UI, phase display (mirrors operator's phase derivation), approval decision UI, option selection, revision feedback, escalation display |
 
 ## Planned Changes
 
 | Ticket | Summary |
 |---|---|
-| OLS-2913 | Populate `status.steps.<step>.conditions` consistently for UI/CLI |
+| OLS-3066 | Decouple reconcile latency: batch sandbox model, ConfigMap input, Result CR output via `oc`, watch-driven async, per-step timeout, ≤30s reconcile SLO. Subsumes OLS-2913 step-conditions. |
 | OLS-2894 | Per-run approval overrides and namespace-scoped `ApprovalPolicy` |
 | OLS-2957 | Sandbox template management UX and CRD ergonomics |
-| OLS-3038 | TLS verification and network policy for agent traffic |
+| ~~OLS-3038~~ | ~~TLS verification and network policy for agent traffic~~ No longer applicable — sandbox pods have no HTTP server (OLS-3066) |
 | OLS-3033 | Operator-passed `allowedTools` and `llm` aligned with `ProviderQueryOptions` |
-| OLS-3268 | Analysis can signal `actionRequired=false` to auto-complete with `NoActionRequired` phase |
-| OLS-3295 | Rename `Proposal` → `AgenticRun`, `ProposalApproval` → `AgenticRunApproval`, `ProposalResult` → `RemediationPlan` across CRDs, API, CLI, console, and docs |
+| ~~OLS-3268~~ | ~~Analysis can signal `actionRequired=false` to auto-complete with `NoActionRequired` phase~~ [DONE: OLS-3268] |
+| ~~OLS-3295~~ | ~~Rename `Proposal` → `AgenticRun`, `ProposalApproval` → `AgenticRunApproval`, `ProposalResult` → `RemediationPlan` across CRDs, API, CLI, console, and docs~~ [DONE: OLS-3295] |
 | OLS-3441 | Script-grounded RBAC: analysis produces concrete bash scripts and derives RBAC from commands; execution dry-runs mutations before applying |
+| OLS-3657 | Event adapter: Jira-triggered AgenticRuns for automated bug triage (prototype in lightspeed-team-harness) |

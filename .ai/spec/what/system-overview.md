@@ -26,13 +26,13 @@ Autonomous cluster operations. Alerts or user requests trigger multi-phase AI wo
 
 The hub layer for fleet-scale operations. A central hub cluster manages spoke clusters, aggregating alerts and proposals across the fleet, and providing a single pane of glass for multicluster AI-assisted operations.
 
-9. **lightspeed-hub** (Go/kubebuilder) — Hub operator. Manages `SpokeCluster` CRs, coordinates fleet-wide agentic operations, automates spoke onboarding (adapter deployment, credential configuration, health monitoring). Guide: `lightspeed-hub/AGENTS.md`
-10. **lightspeed-hub-ui** (TypeScript/React) — Console plugin for the hub. Multicluster dashboard for viewing spoke health, fleet-wide proposals, and spoke management. Guide: `lightspeed-hub-ui/AGENTS.md`
-11. **lightspeed-otel-collector** (Go) — Custom OpenTelemetry collector. Collects and forwards observability data (metrics, traces, logs) across the OLS fleet. Guide: `lightspeed-otel-collector/AGENTS.md`
+9. **lightspeed-hub** [PLANNED] (Go/kubebuilder) — Hub operator. Manages `SpokeCluster` CRs, coordinates fleet-wide agentic operations, automates spoke onboarding (adapter deployment, credential configuration, health monitoring). Guide: `lightspeed-hub/AGENTS.md`
+10. **lightspeed-hub-ui** [PLANNED] (TypeScript/React) — Console plugin for the hub. Multicluster dashboard for viewing spoke health, fleet-wide proposals, and spoke management. Guide: `lightspeed-hub-ui/AGENTS.md`
+11. **lightspeed-otel-collector** (Go) — Custom OpenTelemetry collector. Collects and forwards observability data (metrics, traces, logs) across the OLS fleet. Spec: `lightspeed-otel-collector/.ai/spec/README.md`
 
 ### Tooling
 
-12. **lightspeed-team-harness** — Shared AI coding skills and conventions for the team (dependency updates, CI failure investigation, PR workflows, CVE resolution). Guide: `lightspeed-team-harness/AGENTS.md`
+12. **lightspeed-team-harness** — Shared AI coding skills and conventions for the team (dependency updates, CI failure investigation, PR workflows, CVE resolution). Also hosts the event adapter prototype (polls Jira for new bugs, creates AgenticRun CRs for automated triage). Guide: `lightspeed-team-harness/AGENTS.md`; event adapter spec: `lightspeed-team-harness/.ai/spec/what/event-adapter.md`
 13. **ols-load-generator** (Go) — Load testing tool. Measures OLS performance under concurrent query load, scrapes cluster Prometheus metrics. Guide: `ols-load-generator/README.md`
 
 ## Cross-Repo Features
@@ -46,6 +46,8 @@ These features span multiple repos and have dedicated spec files describing the 
 | Deployment lifecycle | `what/deployment-lifecycle.md` | operator, service, console |
 | Query pipeline | `what/query-pipeline.md` | console, service, operator, rag-content |
 | Compliance audit logging | `what/audit-logging.md` | agentic-operator, agentic-sandbox, service, operator, agentic-console |
+| Temporary audit log storage | `what/templog.md` | otel-collector, operator, agentic-operator, agentic-sandbox |
+| Agentic security model | `what/agentic-security.md` | agentic-operator, agentic-console |
 
 ## Planned Changes
 

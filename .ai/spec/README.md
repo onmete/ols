@@ -10,10 +10,11 @@ Each child repo has its own `.ai/spec/` (or `AGENTS.md`) with repo-specific beha
 |---|---|---|
 | **what/** | `.ai/spec/what/` | Product-level behavioral rules. Cross-repo feature flows, integration contracts, repo ownership. |
 | **how/** | `.ai/spec/how/` | Routing index. Concern → repo → spec file lookup table. |
+| **decisions/** | `.ai/spec/decisions/` | Architectural Decision Records. Significant choices with context, alternatives, and consequences. |
 
 ## Scope
 
-Covers the full OLS product across all 13 repositories in this workspace. Out of scope: internal repo implementation details (covered by each repo's own `.ai/spec/`).
+Covers the full OLS product across 11 repositories currently cloned in this workspace (lightspeed-hub and lightspeed-hub-ui are not yet available). Out of scope: internal repo implementation details (covered by each repo's own `.ai/spec/`).
 
 ## Audience
 
@@ -31,7 +32,9 @@ AI agents. Content is optimized for precision and machine consumption.
 | Understand how a user query is processed | `what/query-pipeline.md` |
 | Understand the agentic security model | `what/agentic-security.md` |
 | Understand the compliance audit logging system | `what/audit-logging.md` |
+| Understand the temporary audit log pipeline | `what/templog.md` |
 | Check cross-repo rules | `constraints.md` |
+| Browse architectural decisions | `decisions/README.md` |
 
 ## Conventions
 
@@ -39,6 +42,7 @@ AI agents. Content is optimized for precision and machine consumption.
 - **Planned changes:** unimplemented behavior is marked with `[PLANNED]` or `[PLANNED: TICKET-XXXX]` inline next to the rule it affects.
 - **Authority:** what/ specs are authoritative for behavior. how/ specs are authoritative for implementation. When they conflict, what/ wins.
 - **Child spec authority:** for repo-internal behavior, the child repo's `.ai/spec/` is authoritative. This parent spec is authoritative for cross-repo integration contracts and product-level behavior.
+- **Constraints:** cross-repo constraints live in `constraints.md`. Component-specific constraints go in the relevant what/ file's Constraints section.
 
 ## Updating this spec
 
@@ -46,3 +50,4 @@ AI agents. Content is optimized for precision and machine consumption.
 - **Adding a single-repo concern:** do not add it here. Add it to the child repo's `.ai/spec/`. Update `how/repo-map.md` if the concern isn't listed yet.
 - **After implementation:** remove `[PLANNED]` markers from implemented rules. Update integration contracts if APIs/CRDs changed.
 - **When to create a new cross-repo what/ file:** when a feature has its own lifecycle, touches 2+ repos, and has integration contracts (CRDs, APIs, shared data) between them.
+- **Recording decisions:** when a spec change introduces or changes a choice where alternatives existed (technology, pattern, protocol, security model), add or update a decision record in `decisions/`. Use the next available number. A decision record is warranted when the choice is non-obvious, constrains future work, or would be expensive to reverse. If the spec change only refines an existing decision, update the existing record rather than creating a new one.
