@@ -8,7 +8,7 @@ Dual-architecture retrieval system: OKP (Red Hat product docs via Solr hybrid se
 
 1. The operator always deploys an RHOKP sidecar container alongside the app-server pod. RHOKP serves Red Hat knowledge content (OCP docs, errata, runbooks) via a Solr HTTP API on localhost:8080.
 2. The operator generates `solr_hybrid` config in `olsconfig.yaml` pointing to the RHOKP sidecar.
-3. At startup, the service initializes a `SolrHybridSearch` client with the configured Solr HTTP base URL and loads the `ibm-granite/granite-embedding-30m-english` embedding model for query vectorization.
+3. At startup, the service initializes a `SolrHybridSearch` client with the configured Solr HTTP base URL and loads the `ibm-granite/granite-embedding-30m-english` embedding model for query vectorization. The client uses lazy init with retry: if the initial connection fails, every subsequent access re-attempts the connection until it succeeds; once connected, the client is cached normally. There is no retry cap — the operator's wait-for-rhokp init container guarantees RHOKP is reachable at startup, so retries are a safety net for rare post-startup connectivity drops.
 4. At query time, the `search_openshift_documentation` LangChain tool is registered. The LLM decides when to invoke it.
 5. When invoked, the tool normalizes the query (stop-word removal, hyphenated-term quoting), embeds it with the granite model, and POSTs a hybrid-search request to Solr.
 6. The Solr hybrid-search uses lexical edismax as the primary query with KNN vector reranking.
@@ -95,3 +95,4 @@ Both models are bundled in the service image. [PENDING] Ask OKP team if server-s
 | OLS-1872 | BYOK Phase 2: one-click import from Git/Confluence |
 | — | Multi-product OKP filtering (RFE pending with OKP product) |
 | — | Multi-version OKP support (RFE pending with OKP product) |
+| OLS-3799 | Operator: add wait-for-rhokp init container to block app-server startup until RHOKP Solr is reachable. Service: replace `@cached_property` with lazy init + unlimited retry for `SolrHybridSearch` client to prevent permanent connection loss. |

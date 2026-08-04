@@ -31,6 +31,7 @@ The Kubernetes operator that deploys and manages all OpenShift Lightspeed compon
     - RHOKP sidecar (always deployed; serves OKP content via Solr HTTP on localhost:8080; requires ~75 GiB ephemeral storage). Not deployed when `byokRAGOnly` is true.
     - Data collector sidecar (if feedback/transcripts enabled and telemetry secret exists)
     - OpenShift MCP server sidecar (if introspection enabled)
+    - RHOKP wait init container (when `!byokRAGOnly`): polls RHOKP Solr ping endpoint until it responds (~360s timeout), ensuring the app-server does not start until RHOKP is reachable. Follows the same pattern as the PostgreSQL wait init container.
     - BYOK RAG init containers (copy customer index content from OCI image to shared volume, when `spec.ols.rag` configured)
 11a. [PLANNED: OLS-3236] **Alerts Adapter**: Single-replica Go deployment. Polls AlertManager for firing alerts and creates `AgenticRun` CRs. `ALERTMANAGER_URL` env hardcoded to `https://alertmanager-main.openshift-monitoring.svc:9094`. Status condition: `AlertsAdapterReady`.
 11b. [PLANNED: OLS-3236] **Agentic Console**: Single-replica nginx deployment with TLS via service-ca cert. ConsolePlugin CR created and activated in the Console CR alongside the classic console plugin. Status condition: `AgenticConsolePluginReady`.
@@ -100,3 +101,4 @@ The operator accepts image overrides at startup: `--service-image`, `--console-i
 |---|---|
 | OLS-3236 | Deploy agentic-alerts-adapter and agentic-console-plugin as reconciled operands of the lightspeed-operator. Migrate agentic-console deployment from agentic-operator. |
 | OLS-3397 | Remove default resource limits from all operator-managed containers per OpenShift conventions. Keep requests only. CRD still accepts user-specified limits. |
+| OLS-3799 | Add wait-for-rhokp init container to app-server deployment (when `!byokRAGOnly`) to block startup until RHOKP Solr is reachable. Service-side: replace `@cached_property` with lazy init + unlimited retry for `SolrHybridSearch` client. |
