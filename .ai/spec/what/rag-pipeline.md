@@ -6,14 +6,17 @@ Dual-architecture retrieval system: OKP (Red Hat product docs via Solr hybrid se
 
 ### A) OKP Flow (OCP Product Docs) — Runtime Retrieval
 
-1. [PLANNED: OLS-3697] The operator deploys a standalone RHOKP Deployment (`lightspeed-rhokp`) with a ClusterIP Service on HTTPS port 8443. RHOKP serves Red Hat knowledge content (OCP docs, errata, runbooks) via a Solr HTTP API, now accessible to any pod in the operator namespace (app-server, agentic sandbox). TLS is provided by OpenShift service-ca.
-2. The operator generates `solr_hybrid` config in `olsconfig.yaml` pointing to the standalone RHOKP Service (`https://lightspeed-rhokp.<ns>.svc:8443`).
-3. At startup, the service initializes a `SolrHybridSearch` client with the configured Solr HTTP base URL and loads the `ibm-granite/granite-embedding-30m-english` embedding model for query vectorization.
-4. At query time, the `search_openshift_documentation` LangChain tool is registered. The LLM decides when to invoke it.
-5. When invoked, the tool normalizes the query (stop-word removal, hyphenated-term quoting), embeds it with the granite model, and POSTs a hybrid-search request to Solr.
-6. The Solr hybrid-search uses lexical edismax as the primary query with KNN vector reranking.
-7. Results are deduped by parent document, filtered by score threshold, and returned as JSON passages (text, score, title, docs_url).
-8. The LLM grounds its answer on the returned passages.
+1. The operator always deploys an RHOKP sidecar container alongside the app-server pod. RHOKP serves Red Hat knowledge content (OCP docs, errata, runbooks) via a Solr HTTP API on localhost:8080.
+2. The operator generates `solr_hybrid` config in `olsconfig.yaml` pointing to the RHOKP sidecar.
+3. At startup, the service initializes a `SolrHybridSearch` client with the configured Solr HTTP base URL and loads the `ibm-granite/granite-embedding-30m-english` embedding model for query vectorization. The client uses lazy init with retry: if the initial connection fails, every subsequent access re-attempts the connection until it succeeds; once connected, the client is cached normally. There is no retry cap — the operator's wait-for-rhokp init container guarantees RHOKP is reachable at startup, so retries are a safety net for rare post-startup connectivity drops.
+4. [PLANNED: OLS-3697] The operator deploys a standalone RHOKP Deployment (`lightspeed-rhokp`) with a ClusterIP Service on HTTPS port 8443. RHOKP serves Red Hat knowledge content (OCP docs, errata, runbooks) via a Solr HTTP API, now accessible to any pod in the operator namespace (app-server, agentic sandbox). TLS is provided by OpenShift service-ca.
+5. The operator generates `solr_hybrid` config in `olsconfig.yaml` pointing to the standalone RHOKP Service (`https://lightspeed-rhokp.<ns>.svc:8443`).
+6. At startup, the service initializes a `SolrHybridSearch` client with the configured Solr HTTP base URL and loads the `ibm-granite/granite-embedding-30m-english` embedding model for query vectorization.
+7. At query time, the `search_openshift_documentation` LangChain tool is registered. The LLM decides when to invoke it.
+8. When invoked, the tool normalizes the query (stop-word removal, hyphenated-term quoting), embeds it with the granite model, and POSTs a hybrid-search request to Solr.
+7 .The Solr hybrid-search uses lexical edismax as the primary query with KNN vector reranking.
+8. Results are deduped by parent document, filtered by score threshold, and returned as JSON passages (text, score, title, docs_url).
+9. The LLM grounds its answer on the returned passages.
 
 ### B) BYOK Flow (Customer Content) — Unchanged
 
@@ -96,3 +99,4 @@ Both models are bundled in the service image. [PLANNED] Ask OKP team if server-s
 | OLS-3697 | RHOKP standalone HTTPS Deployment — sidecar replaced by `lightspeed-rhokp` Service, TLS via service-ca, ServiceMonitor for Solr metrics |
 | — | Multi-product OKP filtering (RFE pending with OKP product) |
 | — | Multi-version OKP support (RFE pending with OKP product) |
+| OLS-3799 | Operator: add wait-for-rhokp init container to block app-server startup until RHOKP Solr is reachable. Service: replace `@cached_property` with lazy init + unlimited retry for `SolrHybridSearch` client to prevent permanent connection loss. |

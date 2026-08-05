@@ -30,6 +30,8 @@ The Kubernetes operator that deploys and manages all OpenShift Lightspeed compon
 11. **App Server**: FastAPI application deployment with:
     - [PLANNED: OLS-3697] RHOKP standalone Deployment/Service (`lightspeed-rhokp`) — serves OKP content via Solr HTTPS on port 8443; requires ~75 GiB EmptyDir. Reconciled before app-server. Not deployed when `byokRAGOnly` is true.
     - Data collector sidecar (if feedback/transcripts enabled and telemetry secret exists)
+    - OpenShift MCP server sidecar (if introspection enabled)
+    - RHOKP wait init container (when `!byokRAGOnly`): polls RHOKP Solr ping endpoint until it responds (~360s timeout), ensuring the app-server does not start until RHOKP is reachable. Follows the same pattern as the PostgreSQL wait init container.
     - OpenShift MCP server standalone Deployment/Service (if introspection enabled)
     - BYOK RAG init containers (copy customer index content from OCI image to shared volume, when `spec.ols.rag` configured)
 11a. **Alerts Adapter**: Single-replica Go deployment. Polls AlertManager for firing alerts and creates `AgenticRun` CRs. `ALERTMANAGER_URL` env hardcoded to `https://alertmanager-main.openshift-monitoring.svc:9094`. Status condition: `AlertsAdapterReady`.
@@ -109,4 +111,5 @@ The operator accepts image overrides at startup: `--service-image`, `--console-i
 |---|---|
 | OLS-3236 | Deploy agentic-alerts-adapter and agentic-console-plugin as reconciled operands of the lightspeed-operator. Migrate agentic-console deployment from agentic-operator. |
 | OLS-3397 | Remove default resource limits from all operator-managed containers per OpenShift conventions. Keep requests only. CRD still accepts user-specified limits. |
+| OLS-3799 | Add wait-for-rhokp init container to app-server deployment (when `!byokRAGOnly`) to block startup until RHOKP Solr is reachable. Service-side: replace `@cached_property` with lazy init + unlimited retry for `SolrHybridSearch` client. |
 | OLS-3697 | RHOKP standalone HTTPS cutover — sidecar replaced by `lightspeed-rhokp` Deployment/Service. ServiceMonitors added for RHOKP and MCP. |
