@@ -141,8 +141,9 @@ _Note: these repositories are not yet cloned in this workspace. References below
 
 | Concern | Repo | Spec Files |
 |---|---|---|
-| Jira event polling & AgenticRun creation | lightspeed-team-harness | `what/event-adapter.md` |
-| Triage skill packaging (OCI) | lightspeed-team-harness | `what/event-adapter.md` |
+| Multi-domain event polling & AgenticRun creation (Jira New triage, GitHub PR review) | lightspeed-team-harness | `what/event-adapter.md` |
+| Domain config contract (`source`, workflow mode, CI gate, concurrency) | lightspeed-team-harness | `what/event-adapter.md` |
+| Triage / PR-review skill packaging (OCI) | lightspeed-team-harness | `what/event-adapter.md` |
 
 ## Tooling
 
@@ -157,7 +158,7 @@ These features span multiple repos. See the parent `what/` files for end-to-end 
 
 | Feature | Parent Spec | Repos |
 |---|---|---|
-| Agentic run lifecycle | `what/agentic-runs.md` | alerts-adapter, agentic-operator, agentic-sandbox, agentic-console |
+| Agentic run lifecycle | `what/agentic-runs.md` | alerts-adapter, team-harness event-adapter [PROTOTYPE], agentic-operator, agentic-sandbox, agentic-console |
 | Agentic security (approval auth, SA isolation) | `what/agentic-security.md` | agentic-operator, agentic-console |
 | RAG pipeline (OKP + BYOK) | `what/rag-pipeline.md` | rag-content, service, operator |
 | Deployment lifecycle | `what/deployment-lifecycle.md` | operator, service, console, alerts-adapter [PLANNED: OLS-3236], agentic-console [PLANNED: OLS-3236] |
