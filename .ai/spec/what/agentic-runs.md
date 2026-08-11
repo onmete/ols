@@ -6,16 +6,21 @@ Multi-phase AI workflows that diagnose and remediate cluster issues. An alert fi
 
 ### Phase 1: Trigger
 
-An external event source creates an `AgenticRun` CR to initiate a workflow. Any authorized adapter, controller, CLI, or API client can create AgenticRuns — the operator reconciles them regardless of origin.
+An external event source creates an `AgenticRun` CR to initiate a workflow. Any authorized adapter, controller, CLI, or API client can create AgenticRuns — the operator reconciles them regardless of origin. Adapters are create-only — they never update or delete AgenticRuns after creation.
 
 **Example — alerts-adapter (AlertManager events):**
 
 1. The alerts-adapter polls OpenShift AlertManager for firing alerts on a configurable interval.
 2. For each firing alert, the adapter computes a fingerprint (8-char prefix) and checks for an existing AgenticRun CR with a deterministic name derived from the fingerprint.
 3. If no matching AgenticRun exists and the cooldown window has elapsed since the last AgenticRun for that fingerprint, the adapter creates a new `AgenticRun` CR in the alert's namespace with the alert metadata and a templated remediation request.
-4. The adapter is create-only — it never updates or deletes AgenticRuns after creation.
 
-> Other adapters (e.g., the Jira event adapter prototype) follow the same pattern. See each adapter's own `.ai/spec/` for details.
+**Example — event-adapter (team-harness prototype; Jira + GitHub domains):**
+
+4. The event adapter uses one image with a separate Deployment + ConfigMap per domain (`source: jira` or `source: github`). See `lightspeed-team-harness/.ai/spec/what/event-adapter.md`.
+5. The Jira domain polls for issues in New and creates batch triage AgenticRuns (analysis + human-approved execution).
+6. The GitHub PR-review domain polls allowlisted repos and creates one AgenticRun per `repo + pull + headSha` after CI is terminal (all checks except Tide).
+
+**Analysis-only writeback:** Some domains (e.g. GitHub PR review) perform external side effects during analysis (such as posting a Pull Request Review with event `COMMENT`) and return `actionRequired=false`, so the run terminates in `NoActionRequired` without an execution phase. This intentionally bypasses the propose → approve → execute gate for that domain and must be documented on the adapter; it does not change the CRD.
 
 ### Phase 2: Analysis
 
