@@ -35,7 +35,7 @@ Each phase of an AgenticRun lifecycle gets its own trace. The AgenticRun UID lin
 - **Per-phase trace IDs** — each phase (analysis, execution, verification, escalation) gets a fresh, auto-generated OTEL trace ID. The operator creates the root span for each phase and propagates trace context to the sandbox via W3C `traceparent` header on `/v1/agent/run` calls.
 - **Span Links** — each phase trace's root span includes an OTel Span Link back to the prior phase's root span, giving trace UIs a "click to see previous phase" affordance.
 - **Human approval** — recorded as a standalone short-lived trace (just the approval event, not the wait time). Wait duration is derived from timestamps between the analysis-completed and approval-received traces.
-- **On retry** (verification failure → re-execute) — new traces are created for the retry execution and verification phases. Retry index is a span attribute.
+- **On verification failure** — the operator transitions to the escalation phase. A new escalation trace is created. There are no execution retries on verification failure.
 
 Note: agentic events do not carry a `user_id` — AgenticRuns are created by the alerts-adapter (a service account), not a human. The human identity enters the audit trail at approval time via the mutating webhook (`agentic_run.approval.completed` span event).
 
@@ -68,8 +68,7 @@ Emitted as OTel span events attached to the operator's phase spans. Each carries
 | `agentic_run.analysis.completed` | AnalysisResult CR created | `result.name`, `result.uid`, `options.count` + full AnalysisResult CR serialization |
 | `agentic_run.approval.completed` | AgenticRunApproval PATCH observed | `approver.uid`, `approver.username`, selected option, full text of selected option |
 | `agentic_run.execution.completed` | ExecutionResult CR created | `result.name`, `result.uid`, `actions_taken.count` + full ExecutionResult CR serialization |
-| `agentic_run.verification.completed` | VerificationResult CR created, checks passed | `result.name`, `result.uid`, `checks.count` + full VerificationResult CR serialization |
-| `agentic_run.verification.retry` | Verification failed, retrying | `result.name`, `retry_count`, `checks.count` + full VerificationResult CR serialization |
+| `agentic_run.verification.completed` | VerificationResult CR created | `result.name`, `result.uid`, `checks.count` + full VerificationResult CR serialization |
 | `agentic_run.escalation.completed` | EscalationResult CR created | Full EscalationResult CR serialization |
 | `agentic_run.terminal` | AgenticRun reaches terminal phase | `phase`, `reason` |
 
@@ -158,7 +157,7 @@ agentic_run.terminal            [operator, root, INTERNAL, agentic_run.uid=<UID>
 └── (span event: agentic_run.terminal with phase and reason)
 ```
 
-On retry (verification failure → re-execute), new execution and verification traces are created with `retry_index` as a span attribute.
+On verification failure, the operator transitions directly to the escalation phase — there are no execution retries.
 
 ### OLS (lightspeed-service) — Per-Request Traces
 
@@ -321,7 +320,6 @@ Operator spans are Kubernetes workflow orchestration, not GenAI inference. They 
 | `agentic_run.namespace` | AgenticRun CR namespace |
 | `gen_ai.request.model` | Model being sent to sandbox (where known) |
 | `gen_ai.provider.name` | Provider being sent to sandbox (where known) |
-| `retry_index` | Retry count (on execution/verification retries) |
 | `phase` | Terminal phase (on terminal span) |
 | `reason` | Terminal reason (on terminal span) |
 | `approver.uid` | Approver identity (on approval span) |
@@ -351,7 +349,7 @@ OLS additionally keeps its existing `ols_*` Prometheus metrics for backward comp
 | **lightspeed-agentic-sandbox** | Create `chat {model}` inference spans and `execute_tool {name}` tool spans with `gen_ai.*` attributes. Emit text/thinking as span events on the inference span. Receive trace context from operator via `traceparent` header. Configure stdout and OTLP exporters. Expose `gen_ai.*` Prometheus metrics via `/metrics` endpoint. |
 | **lightspeed-service** | Create per-request traces with `request.lifecycle` root span. Create `chat {model}` spans for LLM turns and `execute_tool {name}` spans for tools (with MCP attributes when MCP-sourced). Carry `gen_ai.conversation.id` and `user_id` on all spans. Configure stdout and OTLP exporters from `olsconfig.yaml`. Expose `gen_ai.*` Prometheus metrics alongside existing `ols_*` metrics. |
 | **lightspeed-operator** | CRD change: add `spec.audit` to `OLSConfig`. Propagate audit config to `olsconfig.yaml` for lightspeed-service. |
-| **lightspeed-agentic-console** | Populate approval decision fields on AgenticRunApproval PATCH (selected option, max retries, stage). Display `spec.approver` fields in UI. No audit emission responsibility. |
+| **lightspeed-agentic-console** | Populate approval decision fields on AgenticRunApproval PATCH (selected option, stage). Display `spec.approver` fields in UI. No audit emission responsibility. |
 | **lightspeed-console** | No changes. No audit emission responsibility. |
 
 ## Child Spec Updates Required
