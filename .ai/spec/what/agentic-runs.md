@@ -50,28 +50,15 @@ An external event source creates an `AgenticRun` CR to initiate a workflow. Any 
 ### Phase 5: Verification
 
 21. If verification is configured, the operator checks the approval gate for verification.
-<<<<<<< HEAD
-22. The operator calls the sandbox with a verification **query** (option + execution output) and verification **system instructions** [PLANNED: OLS-3491].
-23. If verification fails, the operator retries up to max attempts, including previous attempt results as context.
-24. On success, the operator stores the result in a `VerificationResult` CR and the AgenticRun moves to Completed.
-25. On exhausted retries, the AgenticRun may escalate.
-
-### Phase 6: Escalation
-
-26. If verification fails after all retries, the operator checks the approval gate for escalation.
-27. The operator calls the sandbox with an escalation **query** payload and escalation **system instructions** resolved at call time from cluster `agenticOLS.instructions.escalation` or built-in (no per-run field in OLS-3491). [PLANNED: OLS-3491]
-28. The result is stored in an `EscalationResult` CR and the AgenticRun moves to Escalated.
-=======
-22. The operator calls the sandbox with a verification request, passing the execution result. The verification prompt instructs the agent to retry convergence-dependent checks (alerts, metrics, pod readiness) with appropriate wait intervals before reporting failure.
+22. The operator calls the sandbox with a verification **query** (option + execution output) and verification **system instructions** [PLANNED: OLS-3491]. The verification instructions require retrying convergence-dependent checks (alerts, metrics, pod readiness) with appropriate wait intervals before reporting failure.
 23. On success, the operator stores the result in a `VerificationResult` CR and the AgenticRun moves to Completed.
 24. On failure, the operator stores the result in a `VerificationResult` CR and moves to the Escalation phase.
 
 ### Phase 6: Escalation
 
 25. If verification fails, the operator checks the approval gate for escalation.
-26. The operator calls the sandbox with an escalation request to generate a human-readable summary.
+26. The operator calls the sandbox with an escalation **query** payload and escalation **system instructions** resolved at call time from cluster `agenticOLS.instructions.escalation` or built-in (no per-run field in OLS-3491). [PLANNED: OLS-3491]
 27. The result is stored in an `EscalationResult` CR and the AgenticRun moves to Escalated.
->>>>>>> upstream/main
 
 ### Cleanup
 
