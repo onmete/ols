@@ -26,8 +26,8 @@ Autonomous cluster operations. Alerts or user requests trigger multi-phase AI wo
 
 The hub layer for fleet-scale operations. A central hub cluster manages spoke clusters, aggregating alerts and proposals across the fleet, and providing a single pane of glass for multicluster AI-assisted operations.
 
-9. **lightspeed-hub** [PLANNED] (Go/kubebuilder) — Hub operator. Manages `SpokeCluster` CRs, coordinates fleet-wide agentic operations, automates spoke onboarding (adapter deployment, credential configuration, health monitoring). Guide: `lightspeed-hub/AGENTS.md`
-10. **lightspeed-hub-ui** [PLANNED] (TypeScript/React) — Console plugin for the hub. Multicluster dashboard for viewing spoke health, fleet-wide proposals, and spoke management. Guide: `lightspeed-hub-ui/AGENTS.md`
+9. **lightspeed-hub** (Go/kubebuilder) — Hub operator. Manages `SpokeCluster` CRs, brokers credentials to spoke clusters (secret, MCE), orchestrates standalone adapters on the hub, and coordinates fleet-wide agentic operations. Spec: `lightspeed-hub/.ai/spec/README.md`
+10. **lightspeed-hub-ui** [PLANNED] (TypeScript/React) — Console plugin for the hub. Single control plane for fleet-wide AgenticRun visibility, spoke management, and approval. Guide: `lightspeed-hub-ui/AGENTS.md`
 11. **lightspeed-otel-collector** (Go) — Custom OpenTelemetry collector. Collects and forwards observability data (metrics, traces, logs) across the OLS fleet. Spec: `lightspeed-otel-collector/.ai/spec/README.md`
 
 ### Tooling
@@ -48,6 +48,7 @@ These features span multiple repos and have dedicated spec files describing the 
 | Compliance audit logging | `what/audit-logging.md` | agentic-operator, agentic-sandbox, service, operator, agentic-console |
 | Temporary audit log storage | `what/templog.md` | otel-collector, operator, agentic-operator, agentic-sandbox |
 | Agentic security model | `what/agentic-security.md` | agentic-operator, agentic-console |
+| Multicluster operations | `what/multicluster-ops.md` | hub, hub-ui, agentic-operator, alerts-adapter |
 
 ## Planned Changes
 

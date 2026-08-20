@@ -105,28 +105,25 @@ Lookup table: concern → repo(s) → spec file(s). Use this to find where to go
 
 ## Multicluster OLS — Hub
 
-_Note: these repositories are not yet cloned in this workspace. References below are aspirational._
-
 | Concern | Repo | Spec Files |
 |---|---|---|
 | Hub operator system overview | lightspeed-hub | `what/system-overview.md` |
 | SpokeCluster CR lifecycle (registration → decommission) | lightspeed-hub | `what/spoke-lifecycle.md` |
-| Spoke onboarding automation | lightspeed-hub | `what/spoke-lifecycle.md` |
-| Fleet-wide proposal coordination | lightspeed-hub | `what/fleet-coordination.md` |
+| Credential broker (secret, MCE) | lightspeed-hub | `what/spoke-lifecycle.md` |
+| Adapter orchestrator (standalone adapters on hub) | lightspeed-hub | `what/system-overview.md` |
+| Fleet-wide AgenticRun coordination | lightspeed-hub | `what/fleet-coordination.md` |
 | Fleet-wide alert aggregation | lightspeed-hub | `what/fleet-coordination.md` |
 | Spoke health monitoring | lightspeed-hub | `what/spoke-lifecycle.md` |
-| Hub-initiated proposals | lightspeed-hub | `what/fleet-coordination.md` |
+| Cross-repo multicluster flow | ols (parent) | `what/multicluster-ops.md` |
 
 ## Multicluster OLS — Hub UI
 
-_Note: these repositories are not yet cloned in this workspace. References below are aspirational._
-
 | Concern | Repo | Spec Files |
 |---|---|---|
-| Hub UI system overview | lightspeed-hub-ui | `what/system-overview.md` |
-| Fleet dashboard (health, proposals, alerts) | lightspeed-hub-ui | `what/fleet-dashboard.md` |
-| Spoke management (registration, detail, decommission) | lightspeed-hub-ui | `what/spoke-management.md` |
-| Fleet-wide proposal views | lightspeed-hub-ui | `what/fleet-dashboard.md` |
+| Hub UI system overview | lightspeed-hub-ui | `what/system-overview.md` [PLANNED] |
+| Fleet dashboard (spoke health, AgenticRuns, alerts) | lightspeed-hub-ui | `what/fleet-dashboard.md` [PLANNED] |
+| Spoke management (registration, detail, decommission) | lightspeed-hub-ui | `what/spoke-management.md` [PLANNED] |
+| Fleet-wide AgenticRun views | lightspeed-hub-ui | `what/fleet-dashboard.md` [PLANNED] |
 
 ## Multicluster OLS — OTel Collector
 
@@ -164,3 +161,4 @@ These features span multiple repos. See the parent `what/` files for end-to-end 
 | Query pipeline | `what/query-pipeline.md` | console, service, operator, rag-content |
 | Compliance audit logging | `what/audit-logging.md` | agentic-operator, agentic-sandbox, service, operator, agentic-console |
 | Temporary audit log storage | `what/templog.md` | lightspeed-otel-collector, operator, agentic-operator, agentic-sandbox |
+| Multicluster operations | `what/multicluster-ops.md` | hub, hub-ui, agentic-operator, alerts-adapter |

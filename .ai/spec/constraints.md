@@ -16,8 +16,9 @@ Rules that apply across all repositories in the OLS workspace. Violating any of 
 
 5. Classic OLS CRDs use API group `ols.openshift.io/v1alpha1`.
 6. Agentic OLS CRDs use API group `agentic.openshift.io/v1alpha1`.
-7. All components deploy into the `openshift-lightspeed` namespace.
+7. Multicluster Hub CRDs use API group `hub.openshift.io/v1alpha1`.
+8. All components deploy into the `openshift-lightspeed` namespace.
 
 ## RAG
 
-8. The embedding model used to build RAG indexes must be identical to the model used to query them at runtime. Model mismatch produces meaningless similarity scores.
+9. The embedding model used to build RAG indexes must be identical to the model used to query them at runtime. Model mismatch produces meaningless similarity scores.
