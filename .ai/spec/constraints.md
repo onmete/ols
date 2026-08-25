@@ -22,3 +22,7 @@ Rules that apply across all repositories in the OLS workspace. Violating any of 
 ## RAG
 
 9. The embedding model used to build RAG indexes must be identical to the model used to query them at runtime. Model mismatch produces meaningless similarity scores.
+
+## Version Support
+
+10. Classic OLS is supported on all OCP versions. The agentic layer (agentic-operator, agentic console plugin, agentic sandbox, alerts adapter, and the classic operator's agentic operands/handoff) is installed only on OCP ≥ 5.0. Every OCP 4.x runs classic-only, with no agentic components, CRDs, or RBAC present. See decision `0037-agentic-version-gating.md`.

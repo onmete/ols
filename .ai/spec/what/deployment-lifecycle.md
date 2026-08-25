@@ -2,6 +2,8 @@
 
 The Kubernetes operator that deploys and manages all OpenShift Lightspeed components from a single `OLSConfig` custom resource.
 
+**Version gating:** the agentic operands described below (agentic console plugin, alerts adapter, and the classic→agentic handoff) are present only on OCP ≥ 5.0, where the operator ships from the v2 (full) bundle. On OCP 4.x the operator ships from the v1 (classic) bundle and reconciles none of them. See decision `decisions/0037-agentic-version-gating.md`.
+
 ## End-to-End Flow
 
 ### CR Creation
@@ -113,3 +115,4 @@ The operator accepts image overrides at startup: `--service-image`, `--console-i
 | OLS-3397 | Remove default resource limits from all operator-managed containers per OpenShift conventions. Keep requests only. CRD still accepts user-specified limits. |
 | OLS-3799 | Add wait-for-rhokp init container to app-server deployment (when `!byokRAGOnly`) to block startup until RHOKP Solr is reachable. Service-side: replace `@cached_property` with lazy init + unlimited retry for `SolrHybridSearch` client. |
 | OLS-3697 | RHOKP standalone HTTPS cutover — sidecar replaced by `lightspeed-rhokp` Deployment/Service. ServiceMonitors added for RHOKP and MCP. |
+| OLS-3899 | Agentic operands (agentic console, alerts adapter, handoff) present only on OCP ≥ 5.0 (v2 bundle). OCP 4.x ships the v1 classic bundle with none of them. See decision 0037. |
