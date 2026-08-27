@@ -35,6 +35,7 @@ Lookup table: concern → repo(s) → spec file(s). Use this to find where to go
 | TLS configuration | lightspeed-operator | `what/tls.md` |
 | Resource lifecycle & cleanup | lightspeed-operator | `what/resource-lifecycle.md` |
 | OLM bundle composition | lightspeed-operator | `what/bundle-composition.md` |
+| FBC release pipeline (adding OCP versions) | lightspeed-operator | `how/fbc-release.md` |
 | Agentic alerts adapter deployment | lightspeed-operator | [PLANNED: OLS-3236] `what/reconciliation.md` |
 | Agentic console plugin deployment | lightspeed-operator | [PLANNED: OLS-3236] `what/reconciliation.md` |
 | Observability (ServiceMonitor, PrometheusRule) | lightspeed-operator | `what/observability.md` |
