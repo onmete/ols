@@ -96,10 +96,11 @@ Permissions the standing identity needs on the spoke: create/delete ServiceAccou
 ### Spoke-Side Reader RBAC (provisioned at registration)
 
 During spoke registration, the hub operator creates:
-- `lightspeed-agent` SA in `openshift-lightspeed` namespace on the spoke
-- `cluster-reader` and `cluster-monitoring-view` ClusterRoleBindings referencing `lightspeed-agent`
+- `openshift-lightspeed-managed` namespace on the spoke (separate from `openshift-lightspeed` to avoid collisions with a spoke-local OLS installation)
+- `lightspeed-agent` SA in `openshift-lightspeed-managed` on the spoke
+- `cluster-reader` and `cluster-monitoring-view` ClusterRoleBindings referencing `openshift-lightspeed-managed/lightspeed-agent`
 
-This establishes the same reader RBAC pattern used in single-cluster mode. The agentic-operator's `addReaderSubject` discovers these ClusterRoleBindings and adds per-step SAs to them — identical code path for local and remote clusters.
+This establishes the same reader RBAC pattern used in single-cluster mode. The agentic-operator's `addReaderSubject` discovers these ClusterRoleBindings and adds per-step SAs to them — identical code path for local and remote clusters. The separate namespace ensures no conflicts if the spoke also has its own standalone OLS installation.
 
 ### Per-Step SAs (per-AgenticRun)
 

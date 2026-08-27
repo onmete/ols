@@ -18,11 +18,12 @@ Rules that apply across all repositories in the OLS workspace. Violating any of 
 6. Agentic OLS CRDs use API group `agentic.openshift.io/v1alpha1`.
 7. Multicluster Hub CRDs use API group `hub.openshift.io/v1alpha1`.
 8. All components deploy into the `openshift-lightspeed` namespace.
+9. Hub-managed spoke-side resources (per-step SAs, RBAC for multicluster) deploy into the `openshift-lightspeed-managed` namespace on the spoke. This avoids collisions with a spoke-local OLS installation in `openshift-lightspeed`.
 
 ## RAG
 
-9. The embedding model used to build RAG indexes must be identical to the model used to query them at runtime. Model mismatch produces meaningless similarity scores.
+10. The embedding model used to build RAG indexes must be identical to the model used to query them at runtime. Model mismatch produces meaningless similarity scores.
 
 ## Version Support
 
-10. Classic OLS is supported on all OCP versions. The agentic layer (agentic-operator, agentic console plugin, agentic sandbox, alerts adapter, and the classic operator's agentic operands/handoff) is installed only on OCP ≥ 5.0. Every OCP 4.x runs classic-only, with no agentic components, CRDs, or RBAC present. See decision `0037-agentic-version-gating.md`.
+11. Classic OLS is supported on all OCP versions. The agentic layer (agentic-operator, agentic console plugin, agentic sandbox, alerts adapter, and the classic operator's agentic operands/handoff) is installed only on OCP ≥ 5.0. Every OCP 4.x runs classic-only, with no agentic components, CRDs, or RBAC present. See decision `0037-agentic-version-gating.md`.
