@@ -66,3 +66,8 @@ Each file follows the naming convention `NNNN-slug.md` (e.g., `0001-langchain-ll
 | # | Decision | Repos |
 |---|---|---|
 | [0037](0037-agentic-version-gating.md) | Agentic layer gated to OCP ≥ 5.0 via two version-split bundles | operator, agentic-operator |
+
+### MCP Tool RBAC (2026-08)
+| # | Decision | Repos |
+|---|---|---|
+| [0038](0038-mcp-tool-rbac-resolution.md) | RBAC for MCP tool calls: server-published `_meta` contract → oc-IR fallback → fail-closed, with a hard deny ceiling | agentic-operator, agentic-sandbox, operator (ocp-mcp) |
