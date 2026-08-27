@@ -21,9 +21,11 @@ The hub is both control plane and compute plane. A thin hub operator layer manag
 
 - **HubConfig CR** (`hub.openshift.io/v1alpha1`): cluster-scoped singleton. `spec.clusterRegistryMode` selects fleet-wide credential management strategy (`secret` or `mce`). Single source of truth — a validating webhook ensures all SpokeCluster CRs match.
 - **SpokeCluster CR** (`hub.openshift.io/v1alpha1`): cluster-scoped, one per spoke. Contains `apiServer` and `credentialSource` matching the HubConfig mode.
-- **Credential broker**: pluggable interface with `SecretCredentialSource` and `MCECredentialSource` implementations.
-- **Standalone adapters**: run on hub as pods, poll spoke event sources via remote kube-api.
-- **Sandboxes**: run on hub, target spoke via ephemeral SA kubeconfig (24h token TTL).
+- **Standing kubeconfig Secret**: per-spoke normalized kubeconfig created by hub operator during registration (`spoke-kubeconfig-{name}`). For secret mode, contains direct credentials. For MCE mode, includes `proxy-url` for transparent MCE cluster-proxy routing. This is the single integration contract — the agentic-operator and adapters read this Secret without knowing the credential source.
+- **Spoke-side reader RBAC**: hub operator creates `lightspeed-agent` SA and reader ClusterRoleBindings on spoke during registration, matching the single-cluster RBAC pattern.
+- **Per-step SAs**: agentic-operator creates per-step SAs on the spoke (same `ls-{step}-{UID}` naming as single-cluster), adds them to reader ClusterRoleBindings via `addReaderSubject`, and creates sandbox kubeconfig Secrets with 24h ephemeral tokens.
+- **Standalone adapters**: run on hub as pods, poll spoke event sources via standing kubeconfig.
+- **Sandboxes**: run on hub, target spoke via per-step sandbox kubeconfig (proxy-url copied from standing kubeconfig if MCE).
 - **Direct kube-api connectivity**: admin ensures network path between hub and spoke.
 
 ### Spoke-Local Mode (PLANNED)
