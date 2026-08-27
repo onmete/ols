@@ -71,9 +71,9 @@ An external event source creates an `AgenticRun` CR to initiate a workflow. Any 
 | CRD | Scope | Owner | Purpose |
 |---|---|---|---|
 | `AgenticRun` | Namespace | external adapters/clients (creates), operator (reconciles) | Workflow state machine. Immutable spec, mutable revisionFeedback, status conditions. |
-| `AgenticRunApproval` | Namespace | console (creates) | Approval decisions per stage, option selection. Owned by AgenticRun. |
-| `ApprovalPolicy` | Cluster (singleton "cluster") | admin (creates) | Automatic/Manual gates per stage, max concurrent runs. |
-| `Agent` | Cluster | admin (creates) | LLM provider selection and model name. |
+| `AgenticRunApproval` | Namespace | console (creates) | Approval decisions per stage, option selection, max attempts override. Owned by AgenticRun. |
+| `ApprovalPolicy` | Cluster (singleton "cluster") | admin (creates) | Automatic/Manual gates per stage, max attempts, max concurrent runs. |
+| `Agent` | Cluster | admin (creates) | LLM provider, model, per-step agent execution budgets, and maximum agent turns. |
 | `LLMProvider` | Cluster | admin (creates) | Provider type, credentials secret, URL, region/project. |
 | `AnalysisResult` | Namespace | sandbox (creates via `oc`), operator (reads) [OLS-3066] | Immutable analysis output. Owned by AgenticRun. |
 | `ExecutionResult` | Namespace | sandbox (creates via `oc`), operator (reads) [OLS-3066] | Immutable execution output. Owned by AgenticRun. |
@@ -96,12 +96,21 @@ Context envelope in the `context` ConfigMap key varies by phase:
 - Verification: execution result, previous attempts, attempt metadata
 - Escalation: full workflow history
 
+### [PLANNED: OLS-3743] Layered Step Timeouts
+
+Each workflow step has one administrator-configured agent execution budget on the selected `Agent`, enforced by two layers. The sandbox applies the effective budget cooperatively to the complete agent invocation and reports `AgentTimeout` through the Result CR. The operator applies a five-minute sandbox startup deadline and a hard running deadline equal to the agent budget plus one minute. Operator enforcement cleans up a sandbox that cannot cancel or publish a result. This replaces OLS-3066's original single ten-minute deadline measured from Pod creation.
+
+Timeout fields and defaults are: analysis 600 seconds, execution 600 seconds, verification 1800 seconds, and escalation 600 seconds. The operator resolves omitted fields and sends `LIGHTSPEED_AGENT_TIMEOUT_SECONDS`; the sandbox does not own separate defaults. `chatSeconds` is removed because providers have no consistent per-turn timeout.
+
+`Agent.spec.maxTurns` remains independent from wall-clock timeout. The operator defaults it to 200 and sends `LIGHTSPEED_AGENT_MAX_TURNS`; the sandbox maps it to each provider SDK's iteration limit. Timeout failures never retry automatically. See `decisions/0039-layered-agent-timeouts.md` for deadline clocks, status reasons, cleanup, and alternatives.
+
 ### Shared Data Formats
 
 - **Alert fingerprint**: 8-char prefix for deterministic AgenticRun naming and deduplication
 - **AnalysisResult schema**: includes `actionRequired` (bool) and a top-level `Diagnosis` (summary, rootCause). When `actionRequired` is false, `Options` may be empty. Each `RemediationOption` contains diagnosis, remediation plan (`plan` field), RBAC requirements, verification plan. The `RemediationPlan` struct holds description, actions, and reversibility. Each action includes `command` (exact bash command, required, 1-4096 chars), `type` (phase category: pre-check, mutation, wait, post-check), and `description`. RBAC requirements are derived from the script commands, with `get`/`list`/`watch` as minimum read verbs for every resource.
 - **Phase derivation**: from status.conditions with precedence EmergencyStopped > Escalated > Denied > Verified > Executed > Analyzed (with `NoActionRequired` reason → `NoActionRequired` phase, otherwise → Proposed)
 - **LLM config env vars**: `LIGHTSPEED_PROVIDER`, `LIGHTSPEED_MODEL`, `LIGHTSPEED_PROVIDER_URL`, and region/project/api-version variants
+- **Agent execution limits** [PLANNED: OLS-3743]: `LIGHTSPEED_AGENT_TIMEOUT_SECONDS` and `LIGHTSPEED_AGENT_MAX_TURNS`, always resolved and set by the agentic operator
 
 ## Repo Ownership
 
@@ -117,6 +126,7 @@ Context envelope in the `context` ConfigMap key varies by phase:
 | Ticket | Summary |
 |---|---|
 | OLS-3066 | Decouple reconcile latency: batch sandbox model, ConfigMap input, Result CR output via `oc`, watch-driven async, per-step timeout, ≤30s reconcile SLO. Subsumes OLS-2913 step-conditions. |
+| OLS-3743 | Wire Agent execution budgets and maximum turns into the batch sandbox; enforce layered agent and sandbox lifecycle deadlines. |
 | OLS-2894 | Per-run approval overrides and namespace-scoped `ApprovalPolicy` |
 | OLS-2957 | Sandbox template management UX and CRD ergonomics |
 | ~~OLS-3038~~ | ~~TLS verification and network policy for agent traffic~~ No longer applicable — sandbox pods have no HTTP server (OLS-3066) |
