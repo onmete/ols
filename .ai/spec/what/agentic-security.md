@@ -1,6 +1,6 @@
 # Agentic Security Model
 
-Security constraints for the agentic run system. Covers approval authorization and execution-time permission isolation. Cross-references `agentic-runs.md` for the overall workflow; this file governs *who may approve* and *how permissions are scoped per run*.
+Security constraints for the agentic run system. Covers approval authorization and execution-time permission isolation. Cross-references `agentic-runs.md` for the overall workflow; this file governs *who may approve* and *how permissions are scoped per run*. For how the RBAC bound to the per-run execution SA is *derived* when a remediation step is an MCP tool call, see `mcp-tool-rbac.md` (OLS-3680).
 
 ## Security Gaps Addressed
 

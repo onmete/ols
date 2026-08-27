@@ -2,6 +2,8 @@
 
 Cross-repo specification for fleet-scale agentic operations. A central hub cluster manages spoke clusters, routing alerts and agentic workflows across the fleet through a single control plane.
 
+> **Testing:** how this feature is tested is specified separately in [multicluster-testing.md](multicluster-testing.md).
+
 ## Repos Involved
 
 | Repo | Role |
@@ -56,15 +58,16 @@ The hub is control plane only. Full agentic stack deployed to spoke. Sandboxes r
 
 ### Standalone Adapter Path (alerts-adapter)
 
-1. Hub-side alerts-adapter polls spoke's AlertManager via remote kube-api using standing identity from SpokeCluster credentialSource.
+1. Hub-side alerts-adapter polls spoke's AlertManager via remote kube-api using the standing kubeconfig Secret (`spoke-kubeconfig-{spoke-name}`).
 2. Adapter creates AgenticRun CR on hub with `spec.targetCluster` set to the SpokeCluster name.
-3. Hub's agentic-operator detects the new AgenticRun. Resolves the SpokeCluster CR and obtains spoke kubeconfig via the credential broker.
-4. Agentic-operator creates an ephemeral ServiceAccount on the spoke, scoped to `spec.targetNamespaces`, via remote kube-api using the standing identity. Creates namespace-scoped Roles and RoleBindings. Calls the TokenRequest API to get a 24h bound token.
-5. Agentic-operator creates a kubeconfig Secret on the hub containing the spoke API server URL and the ephemeral token.
-6. Agentic-operator starts the sandbox pod on the hub with the spoke kubeconfig mounted. The sandbox's kubectl/oc/MCP tools target the spoke.
-7. Standard agentic lifecycle: analysis → approval → execution → verification (see `agentic-runs.md`). All sandbox operations target the spoke via remote kube-api.
-8. On terminal phase (completed, failed, escalated): agentic-operator deletes the ephemeral SA, Roles, and RoleBindings on the spoke. Deletes the kubeconfig Secret on the hub. Deletes the sandbox pod.
-9. Token TTL (24h) is the safety net if cleanup fails.
+3. Hub's agentic-operator detects the new AgenticRun. Reads the standing kubeconfig Secret by naming convention: `spoke-kubeconfig-{targetCluster}`. Builds a `rest.Config` from it (transparently routes through MCE proxy if `proxy-url` is present).
+4. **Analysis phase**: Agentic-operator creates a per-step SA (`ls-anl-{run-UID}`) on the spoke via remote kube-api using the standing kubeconfig. Adds the SA to the `lightspeed-agent` reader ClusterRoleBindings on the spoke (same `addReaderSubject` pattern as single-cluster mode). Calls TokenRequest API on the spoke for a 24h token. Creates a sandbox kubeconfig Secret on the hub (`ls-sandbox-kubeconfig-{run-name}-analysis`) with spoke API server + ephemeral token + proxy-url (if present). Mounts into sandbox pod.
+5. **Approval gate**: User approves in hub console.
+6. **Execution phase**: Agentic-operator creates a per-step SA (`ls-exe-{run-UID}`) on the spoke. Adds reader access (same as analysis). Additionally creates namespace-scoped Roles + RoleBindings on the spoke for write access based on the approved option's RBAC requirements. Gets 24h token. Creates execution sandbox kubeconfig Secret. Mounts into sandbox pod.
+7. **Verification phase**: Creates per-step SA (`ls-ver-{run-UID}`) with reader access only (same as analysis). Gets token, creates kubeconfig, mounts into sandbox.
+8. Standard agentic lifecycle for each phase (see `agentic-runs.md`). All sandbox operations target the spoke via remote kube-api through the mounted kubeconfig.
+9. On terminal phase (completed, failed, escalated): agentic-operator deletes all per-step SAs and their RoleBindings on the spoke. Removes per-step SAs from reader ClusterRoleBindings. Deletes sandbox kubeconfig Secrets on the hub (auto-GC via owner reference to AgenticRun). Deletes sandbox pods.
+10. Token TTL (24h) is the safety net if cleanup fails.
 
 ### Embedded Adapter Path [PLANNED]
 
@@ -76,34 +79,68 @@ The hub is control plane only. Full agentic stack deployed to spoke. Sandboxes r
 
 ## Identity Model
 
-### Standing Identity
+### Standing Kubeconfig
 
-From `SpokeCluster.spec.credentialSource`. Used exclusively by the hub operator and agentic-operator for spoke management operations.
+The hub operator creates a normalized kubeconfig Secret per spoke during registration: `spoke-kubeconfig-{spoke-name}`. This is the single integration contract between the hub operator and all consumers (agentic-operator, standalone adapters).
 
-| Source | Identity | MVP |
+| Credential source | What the standing kubeconfig contains | MVP |
 |---|---|---|
-| `secret` | Stored kubeconfig in K8s Secret | Yes |
-| `mce` | MCE cluster-proxy | Yes |
-| `backplane` | Red Hat backplane API | [PLANNED] |
+| `secret` | Spoke API server URL + admin-provided kubeconfig credentials | Yes |
+| `mce` | Spoke API server URL + MCE proxy-url + hub SA token authorized for MCE cluster-proxy | Yes |
+| `backplane` | Spoke API server URL + backplane-issued token | [PLANNED] |
 
-Permissions needed: create/delete ServiceAccounts, Roles, RoleBindings; TokenRequest API; read AlertManager, nodes, namespaces.
+The `proxy-url` field in the kubeconfig is handled transparently by Go's HTTP transport. Consumers call `clientcmd.RESTConfigFromKubeConfig()` and get a `rest.Config` that routes through the MCE proxy automatically — no MCE-specific code in the agentic-operator or adapters.
 
-### Ephemeral SA (per-AgenticRun)
+Permissions the standing identity needs on the spoke: create/delete ServiceAccounts, Roles, RoleBindings; TokenRequest API; read AlertManager, nodes, namespaces.
 
-Created by the agentic-operator for each AgenticRun targeting a spoke. The sandbox's only identity on the spoke.
+### Spoke-Side Reader RBAC (provisioned at registration)
 
-- Name: `ls-exec-{namespace}-{run-name}` (same convention as existing execution RBAC)
-- Scope: namespace-scoped Roles in each `targetNamespace`
-- Token: 24h TTL via TokenRequest API (bound token)
-- Cleanup: labels + finalizer + token TTL safety net
+During spoke registration, the hub operator creates:
+- `lightspeed-agent` SA in `openshift-lightspeed` namespace on the spoke
+- `cluster-reader` and `cluster-monitoring-view` ClusterRoleBindings referencing `lightspeed-agent`
+
+This establishes the same reader RBAC pattern used in single-cluster mode. The agentic-operator's `addReaderSubject` discovers these ClusterRoleBindings and adds per-step SAs to them — identical code path for local and remote clusters.
+
+### Per-Step SAs (per-AgenticRun)
+
+Created by the agentic-operator for each step of an AgenticRun targeting a spoke. Same naming convention and RBAC pattern as single-cluster mode, but SAs are created on the spoke via remote kube-api using the standing kubeconfig.
+
+| Step | SA name | Access |
+|---|---|---|
+| Analysis | `ls-anl-{run-UID}` | Cluster-wide read (via reader ClusterRoleBindings) |
+| Execution | `ls-exe-{run-UID}` | Cluster-wide read + namespace-scoped write (from approved option RBAC) |
+| Verification | `ls-ver-{run-UID}` | Cluster-wide read (via reader ClusterRoleBindings) |
+| Escalation | `ls-esc-{run-UID}` | Cluster-wide read (via reader ClusterRoleBindings) |
+
+For each step, the agentic-operator:
+1. Creates the per-step SA on the spoke (via standing kubeconfig)
+2. Calls `addReaderSubject` to add the SA to reader ClusterRoleBindings on the spoke
+3. For execution only: creates namespace-scoped Roles + RoleBindings for write access
+4. Calls TokenRequest API on the spoke → 24h bound token
+5. Creates a sandbox kubeconfig Secret on the hub with spoke API server + proxy-url (if present) + ephemeral token
+6. Mounts the sandbox kubeconfig into the sandbox pod as `KUBECONFIG`
+
+### Sandbox Kubeconfig Secret
+
+Per-step kubeconfig Secret created on the hub for mounting into sandbox pods:
+- Name: `ls-sandbox-kubeconfig-{run-name}-{step}`
+- Contains: spoke API server URL + proxy-url (copied from standing kubeconfig if present) + per-step SA token
+- Owner reference to AgenticRun CR (auto-GC)
+- The sandbox pod sets `automountServiceAccountToken: false` and uses the mounted `KUBECONFIG` instead
+
+The proxy-url copy is mechanical — no conditional logic:
+```go
+sandboxCluster.ProxyURL = standingCluster.ProxyURL  // empty string if not MCE
+```
 
 ### Cross-Cluster Cleanup
 
 Owner references do not work across clusters. Cleanup is explicit:
 
 1. **Labels**: All spoke-side resources labeled with `hub.openshift.io/spoke-cluster` and `hub.openshift.io/agentic-run`.
-2. **Finalizer**: Finalizer on AgenticRun CR. Controller removes spoke-side resources before releasing the finalizer.
+2. **Finalizer**: Finalizer on AgenticRun CR. Controller removes spoke-side resources (per-step SAs, Roles, RoleBindings) and removes SA subjects from reader ClusterRoleBindings before releasing the finalizer.
 3. **Token TTL**: 24h token expiry as safety net. Periodic reconciliation sweeps stale SAs.
+4. **Hub-side cleanup**: Sandbox kubeconfig Secrets are auto-GC'd via owner reference to AgenticRun.
 
 ## Console Integration
 

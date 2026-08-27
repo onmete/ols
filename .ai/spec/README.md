@@ -31,9 +31,11 @@ AI agents. Content is optimized for precision and machine consumption.
 | Understand how the operator deploys everything | `what/deployment-lifecycle.md` |
 | Understand how a user query is processed | `what/query-pipeline.md` |
 | Understand the agentic security model | `what/agentic-security.md` |
+| Understand how MCP tool-call RBAC is derived | `what/mcp-tool-rbac.md` |
 | Understand the compliance audit logging system | `what/audit-logging.md` |
 | Understand the temporary audit log pipeline | `what/templog.md` |
 | Understand multicluster operations | `what/multicluster-ops.md` |
+| Understand how multicluster is tested | `what/multicluster-testing.md` |
 | Check cross-repo rules | `constraints.md` |
 | Browse architectural decisions | `decisions/README.md` |
 

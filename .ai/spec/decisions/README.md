@@ -61,3 +61,13 @@ Each file follows the naming convention `NNNN-slug.md` (e.g., `0001-langchain-ll
 | [0034](0034-hybrid-rag-tool-selection.md) | Dense + sparse retrieval for tool/skill filtering | service |
 | [0035](0035-remove-claude-sdk.md) | Remove proprietary binary from sandbox | sandbox |
 | [0036](0036-rhokp-standalone-deployment.md) | Standalone HTTPS, not sidecar | operator, service |
+
+### Version Gating (2026-08)
+| # | Decision | Repos |
+|---|---|---|
+| [0037](0037-agentic-version-gating.md) | Agentic layer gated to OCP ≥ 5.0 via two version-split bundles | operator, agentic-operator |
+
+### MCP Tool RBAC (2026-08)
+| # | Decision | Repos |
+|---|---|---|
+| [0038](0038-mcp-tool-rbac-resolution.md) | RBAC for MCP tool calls: server-published `_meta` contract → oc-IR fallback → fail-closed, with a hard deny ceiling | agentic-operator, agentic-sandbox, operator (ocp-mcp) |

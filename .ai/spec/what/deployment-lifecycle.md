@@ -2,6 +2,8 @@
 
 The Kubernetes operator that deploys and manages all OpenShift Lightspeed components from a single `OLSConfig` custom resource.
 
+**Version gating:** the agentic operands described below (agentic console plugin, alerts adapter, and the classic→agentic handoff) are present only on OCP ≥ 5.0, where the operator ships from the v2 (full) bundle. On OCP 4.x the operator ships from the v1 (classic) bundle and reconciles none of them. See decision `decisions/0037-agentic-version-gating.md`.
+
 ## End-to-End Flow
 
 ### CR Creation

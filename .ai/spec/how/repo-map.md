@@ -158,9 +158,11 @@ These features span multiple repos. See the parent `what/` files for end-to-end 
 |---|---|---|
 | Agentic run lifecycle | `what/agentic-runs.md` | alerts-adapter, team-harness event-adapter [PROTOTYPE], agentic-operator, agentic-sandbox, agentic-console |
 | Agentic security (approval auth, SA isolation) | `what/agentic-security.md` | agentic-operator, agentic-console |
+| MCP tool RBAC resolution (`_meta` contract, oc-IR fallback) | `what/mcp-tool-rbac.md` | agentic-operator, agentic-sandbox, operator (ocp-mcp) |
 | RAG pipeline (OKP + BYOK) | `what/rag-pipeline.md` | rag-content, service, operator |
 | Deployment lifecycle | `what/deployment-lifecycle.md` | operator, service, console, alerts-adapter [PLANNED: OLS-3236], agentic-console [PLANNED: OLS-3236] |
 | Query pipeline | `what/query-pipeline.md` | console, service, operator, rag-content |
 | Compliance audit logging | `what/audit-logging.md` | agentic-operator, agentic-sandbox, service, operator, agentic-console |
 | Temporary audit log storage | `what/templog.md` | lightspeed-otel-collector, operator, agentic-operator, agentic-sandbox |
 | Multicluster operations | `what/multicluster-ops.md` | hub, hub-ui, agentic-operator, alerts-adapter |
+| Multicluster testing | `what/multicluster-testing.md` | hub, agentic-operator, alerts-adapter, hub-ui |
