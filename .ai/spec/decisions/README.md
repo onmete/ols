@@ -45,7 +45,7 @@ Each file follows the naming convention `NNNN-slug.md` (e.g., `0001-langchain-ll
 | [0022](0022-sandbox-isolation.md) | Ephemeral pods with per-run ServiceAccount | agentic-operator, sandbox |
 | [0023](0023-alerts-adapter-design.md) | Polling, stateless, create-only adapter | alerts-adapter |
 
-### Recent Design (2026-06 — 2026-07)
+### Recent Design (2026-06 — 2026-08)
 | # | Decision | Repos |
 |---|---|---|
 | [0024](0024-three-layer-product-architecture.md) | Classic / Agentic / Multicluster layer split | all |
@@ -61,7 +61,6 @@ Each file follows the naming convention `NNNN-slug.md` (e.g., `0001-langchain-ll
 | [0034](0034-hybrid-rag-tool-selection.md) | Dense + sparse retrieval for tool/skill filtering | service |
 | [0035](0035-remove-claude-sdk.md) | Remove proprietary binary from sandbox | sandbox |
 | [0036](0036-rhokp-standalone-deployment.md) | Standalone HTTPS, not sidecar | operator, service |
-
 ### Version Gating (2026-08)
 | # | Decision | Repos |
 |---|---|---|
@@ -71,3 +70,8 @@ Each file follows the naming convention `NNNN-slug.md` (e.g., `0001-langchain-ll
 | # | Decision | Repos |
 |---|---|---|
 | [0038](0038-mcp-tool-rbac-resolution.md) | RBAC for MCP tool calls: server-published `_meta` contract → oc-IR fallback → fail-closed, with a hard deny ceiling | agentic-operator, agentic-sandbox, operator (ocp-mcp) |
+
+### Timeout Enforcement (2026-08)
+| # | Decision | Repos |
+|---|---|---|
+| [0039](0039-layered-agent-timeouts.md) | One agent budget with cooperative and hard sandbox enforcement | agentic-operator, sandbox |
