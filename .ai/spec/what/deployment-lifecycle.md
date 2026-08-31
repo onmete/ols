@@ -116,3 +116,5 @@ The operator accepts image overrides at startup: `--service-image`, `--console-i
 | OLS-3799 | Add wait-for-rhokp init container to app-server deployment (when `!byokRAGOnly`) to block startup until RHOKP Solr is reachable. Service-side: replace `@cached_property` with lazy init + unlimited retry for `SolrHybridSearch` client. |
 | OLS-3697 | RHOKP standalone HTTPS cutover — sidecar replaced by `lightspeed-rhokp` Deployment/Service. ServiceMonitors added for RHOKP and MCP. |
 | OLS-3899 | Agentic operands (agentic console, alerts adapter, handoff) present only on OCP ≥ 5.0 (v2 bundle). OCP 4.x ships the v1 classic bundle with none of them. See decision 0037. |
+| OLS-2991 | OCP 4.23 release artifacts — extend v1 bundle annotation to `v4.16-v4.23`, create `ols-fbc-v4-23` Konflux Application, add staging and prod ReleasePlans to `konflux-release-data`. |
+| OLS-2992 | OCP 5.0 release artifacts — create v2 bundle Konflux Application (`ols-bundle-v2`), create `ols-fbc-v5-0` FBC Application, add v2 ReleasePlans to `konflux-release-data`; inaugural agentic-stack release. |
