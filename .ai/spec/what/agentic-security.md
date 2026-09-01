@@ -1,6 +1,6 @@
 # Agentic Security Model
 
-Security constraints for the agentic run system. Covers approval authorization and execution-time permission isolation. Cross-references `agentic-runs.md` for the overall workflow; this file governs *who may approve* and *how permissions are scoped per run*. For how the RBAC bound to the per-run execution SA is *derived* when a remediation step is an MCP tool call, see `mcp-tool-rbac.md` (OLS-3680).
+Security constraints for the agentic run system. Covers approval authorization, cancellation authorization, execution-time permission isolation, and access revocation during termination. Cross-references `agentic-runs.md` for the overall workflow and `agentic-run-termination.md` for stop behavior. For how the RBAC bound to the per-run execution SA is *derived* when a remediation step is an MCP tool call, see `mcp-tool-rbac.md` (OLS-3680).
 
 ## Security Gaps Addressed
 
@@ -46,12 +46,20 @@ Two confirmed vulnerabilities in the current implementation motivate this spec:
 
 15. **Shared SA retention.** The `lightspeed-agent` SA MUST still be created at operator bootstrap (sandbox-execution.md rule 38) for analysis steps and as a fallback. It MUST NOT have any execution-level Roles or ClusterRoles bound to it.
 
+### Run Cancellation and Termination [PLANNED: OLS-3298, OLS-4018]
+
+16. **Cancellation authorization.** Any caller with effective Kubernetes RBAC permission to `patch` namespaced `agenticruns` MAY set the one-way `spec.cancelled=true` field. The operator MUST NOT add a cancellation-specific ClusterRole or require membership in a named group. The API server's authorization of the patch is the enforcement boundary.
+
+17. **Console access review.** The agentic console MUST check `patch` on `agenticruns` in the run namespace before showing or enabling `Stop run`. It MUST NOT inspect group membership or use `patch agenticrunapprovals` as a proxy. The actual patch remains independently authorized by the API server.
+
+18. **Termination revocation.** Per-run cancellation and global suspension MUST revoke all sandbox access associated with the targeted workload, including sandbox ServiceAccount reader bindings and execution Roles/RoleBindings and ClusterRoles/ClusterRoleBindings. Revocation errors MUST remain retryable after terminal status; the system MUST NOT report global suspension fully activated while sandbox access remains. See `agentic-run-termination.md`.
+
 ## Repo Ownership
 
 | Repo | Owns |
 |---|---|
-| **lightspeed-agentic-operator** | ClusterRole/ClusterRoleBinding for approver (RBAC manifests), per-run SA creation/cleanup, RBAC binding to per-run SA, `defaultSandboxSA` replacement logic |
-| **lightspeed-agentic-console** | `useAccessReview` gate on approve/deny buttons |
+| **lightspeed-agentic-operator** | ClusterRole/ClusterRoleBinding for approver (RBAC manifests), per-run SA creation/cleanup, RBAC binding to per-run SA, `defaultSandboxSA` replacement logic; stop-time access revocation [PLANNED: OLS-3298, OLS-4018] |
+| **lightspeed-agentic-console** | `useAccessReview` gate on approve/deny buttons; separate `patch agenticruns` review for Stop [PLANNED: OLS-3298] |
 
 ## Child Spec Updates Required
 
@@ -63,6 +71,8 @@ The following child repo specs describe behavior that this spec supersedes or au
 | lightspeed-agentic-operator | `what/sandbox-execution.md` rule 38 | Clarify that `lightspeed-agent` bootstrap SA is for analysis only; execution uses per-run SA. |
 | lightspeed-agentic-operator | `what/approval.md` | Add rule: `patch agenticrunapprovals` is restricted to cluster-admin via dedicated ClusterRole/ClusterRoleBinding. Reference this spec. |
 | lightspeed-agentic-console | `what/run-lifecycle.md` rule 15-18 | Add rule: console MUST check `useAccessReview` before showing approval UI. |
+| lightspeed-agentic-operator | `what/crd-api.md`, `what/run-lifecycle.md`, `what/system-config.md`, `what/sandbox-execution.md` | Add cancellation authorization and complete stop-time RBAC revocation/retry requirements from `agentic-run-termination.md`. |
+| lightspeed-agentic-console | `what/run-lifecycle.md` | Add a distinct `patch agenticruns` access review for Stop; do not reuse approval permission or inspect groups. |
 | parent | `what/agentic-runs.md` Phase 3 | Add note that approval is restricted to cluster-admin and reference this spec. |
 
 ## Constraints
@@ -70,11 +80,14 @@ The following child repo specs describe behavior that this spec supersedes or au
 - The cluster-admin gate is binary: either you have cluster-admin or you cannot approve. Namespace-scoped approval delegation is out of scope for the current release.
 - Per-run SA names must be unique across concurrent runs. Since all per-run SAs live in the single operator namespace, the naming convention MUST incorporate the run's namespace to avoid collisions when runs in different namespaces share the same name: `ls-exec-{run-namespace}-{run-name}` (truncated to 63 chars). This mirrors how execution Role names already include namespace context.
 - SA token propagation to an already-running pod is not instant. The SA MUST be created and RBAC MUST be bound before the execution pod is created, not after.
+- Kubernetes RBAC grants `patch` at resource scope, not individual-field scope. A caller allowed to cancel through `patch agenticruns` can also modify other mutable AgenticRun fields. Stop-only delegation requires a separate future API design.
 
 ## Planned Changes
 
 | Ticket | Summary |
 |---|---|
 | [DONE: OLS-3295] | Rename `Proposal` → `AgenticRun`, `ProposalApproval` → `AgenticRunApproval` across CRDs, RBAC resources, and SA naming |
+| [PLANNED: OLS-3298] | Authorize per-run cancellation through effective `patch agenticruns`; add a separate console access review and revoke sandbox access until confirmed complete. |
+| [PLANNED: OLS-4018] | Revoke access for every active managed sandbox during global suspension and keep suspension Draining while revocation is incomplete. |
 | [PLANNED] | Namespace-scoped approval delegation: allow non-cluster-admins to approve runs scoped to namespaces where they have equivalent RBAC. Requires either a ValidatingAdmissionWebhook with SubjectAccessReview or a more granular ClusterRole structure. |
 | [PLANNED] | Analysis cluster-reader SA: a fixed `lightspeed-analyst` ClusterRoleBinding with read-only cluster access for analysis steps that need to query cluster state directly. Separate from per-run execution SA. |

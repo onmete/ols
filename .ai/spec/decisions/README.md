@@ -75,3 +75,8 @@ Each file follows the naming convention `NNNN-slug.md` (e.g., `0001-langchain-ll
 | # | Decision | Repos |
 |---|---|---|
 | [0039](0039-layered-agent-timeouts.md) | One agent budget with cooperative and hard sandbox enforcement | agentic-operator, sandbox |
+
+### Agentic Run Termination (2026-09)
+| # | Decision | Repos |
+|---|---|---|
+| [0040](0040-agentic-run-termination.md) | Unified hard-stop contract for per-run cancellation and global suspension | agentic-operator, agentic-console |

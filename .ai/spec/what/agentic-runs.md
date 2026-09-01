@@ -60,9 +60,13 @@ An external event source creates an `AgenticRun` CR to initiate a workflow. Any 
 26. The operator calls the sandbox with an escalation **query** payload and escalation **system instructions** resolved at call time from cluster `agenticOLS.instructions.escalation` or built-in (no per-run field in OLS-3491). [PLANNED: OLS-3491]
 27. The result is stored in an `EscalationResult` CR and the AgenticRun moves to Escalated.
 
+### Termination
+
+28. [PLANNED: OLS-3298, OLS-4018] A caller may permanently cancel any non-terminal run by setting `spec.cancelled=true`; the run derives as `Failed` with condition reason `CancelledByUser`. Cluster-wide suspension retains the distinct `EmergencyStopped` outcome and takes precedence when both signals are pending. Both paths hard-stop managed sandboxes and revoke their access under the retryable contract in `agentic-run-termination.md`.
+
 ### Cleanup
 
-28. On terminal phases (Completed, Failed, Denied, Escalated, NoActionRequired) or AgenticRun deletion, the operator deletes materialized RBAC, releases sandbox pods/claims, and removes the finalizer.
+29. On terminal phases (Completed, Failed, Denied, Escalated, EmergencyStopped, NoActionRequired) or AgenticRun deletion, the operator deletes materialized RBAC and releases sandbox pods/claims. [PLANNED: OLS-3298, OLS-4018] Stop-triggered cleanup continues after terminal status until workload and access removal are confirmed; sandbox references remain populated while cleanup is pending. See `agentic-run-termination.md`.
 
 ## Integration Contracts
 
@@ -70,7 +74,7 @@ An external event source creates an `AgenticRun` CR to initiate a workflow. Any 
 
 | CRD | Scope | Owner | Purpose |
 |---|---|---|---|
-| `AgenticRun` | Namespace | external adapters/clients (creates), operator (reconciles) | Workflow state machine. Immutable spec, mutable revisionFeedback, status conditions. |
+| `AgenticRun` | Namespace | external adapters/clients (creates), authorized users (cancel), operator (reconciles) | Workflow state machine. Spec is immutable except revision feedback, terminal TTL, and one-way cancellation [PLANNED: OLS-3298]; status conditions determine phase. |
 | `AgenticRunApproval` | Namespace | console (creates) | Approval decisions per stage, option selection, max attempts override. Owned by AgenticRun. |
 | `ApprovalPolicy` | Cluster (singleton "cluster") | admin (creates) | Automatic/Manual gates per stage, max attempts, max concurrent runs. |
 | `Agent` | Cluster | admin (creates) | LLM provider, model, per-step agent execution budgets, and maximum agent turns. |
@@ -108,7 +112,7 @@ Timeout fields and defaults are: analysis 600 seconds, execution 600 seconds, ve
 
 - **Alert fingerprint**: 8-char prefix for deterministic AgenticRun naming and deduplication
 - **AnalysisResult schema**: includes `actionRequired` (bool) and a top-level `Diagnosis` (summary, rootCause). When `actionRequired` is false, `Options` may be empty. Each `RemediationOption` contains diagnosis, remediation plan (`plan` field), RBAC requirements, verification plan. The `RemediationPlan` struct holds description, actions, and reversibility. Each action includes `command` (exact bash command, required, 1-4096 chars), `type` (phase category: pre-check, mutation, wait, post-check), and `description`. RBAC requirements are derived from the script commands, with `get`/`list`/`watch` as minimum read verbs for every resource.
-- **Phase derivation**: from status.conditions with precedence EmergencyStopped > Escalated > Denied > Verified > Executed > Analyzed (with `NoActionRequired` reason → `NoActionRequired` phase, otherwise → Proposed)
+- **Phase derivation**: from status.conditions with precedence EmergencyStopped > Escalated > Denied > Verified > Executed > Analyzed (with `NoActionRequired` reason → `NoActionRequired` phase, otherwise → Proposed). [PLANNED: OLS-3298] Per-run cancellation uses the existing `Failed` derivation with the phase-relevant condition set to `False / CancelledByUser`; no Cancelled phase is added.
 - **LLM config env vars**: `LIGHTSPEED_PROVIDER`, `LIGHTSPEED_MODEL`, `LIGHTSPEED_PROVIDER_URL`, and region/project/api-version variants
 - **Agent execution limits** [PLANNED: OLS-3743]: `LIGHTSPEED_AGENT_TIMEOUT_SECONDS` and `LIGHTSPEED_AGENT_MAX_TURNS`, always resolved and set by the agentic operator
 
@@ -117,9 +121,9 @@ Timeout fields and defaults are: analysis 600 seconds, execution 600 seconds, ve
 | Repo | Owns |
 |---|---|
 | **lightspeed-agentic-alerts-adapter** | Alert polling, fingerprint-based dedup, cooldown enforcement, AgenticRun CR creation (create-only) |
-| **lightspeed-agentic-operator** | AgenticRun reconciliation, approval gate enforcement, sandbox provisioning (ConfigMap input + pod creation), RBAC materialization, Result CR processing (reads CRs created by sandbox), phase derivation, finalizer cleanup [OLS-3066] |
+| **lightspeed-agentic-operator** | AgenticRun reconciliation, approval gate enforcement, sandbox provisioning (ConfigMap input + pod creation), RBAC materialization, Result CR processing (reads CRs created by sandbox), phase derivation, finalizer cleanup [OLS-3066]; per-run cancellation and global hard-stop cleanup [PLANNED: OLS-3298, OLS-4018] |
 | **lightspeed-agentic-sandbox** | Batch agent execution (reads `/input/`, runs LLM, creates Result CR via `oc`), LLM provider abstraction (DeepAgents/Anthropic, Gemini, OpenAI adapters), structured output handling, tool execution, event logging [OLS-3066] |
-| **lightspeed-agentic-console** | AgenticRun list/detail UI, phase display (mirrors operator's phase derivation), approval decision UI, option selection, revision feedback, escalation display |
+| **lightspeed-agentic-console** | AgenticRun list/detail UI, phase display (mirrors operator's phase derivation), approval decision UI, option selection, revision feedback, escalation display; per-run Stop control and cancellation presentation [PLANNED: OLS-3298] |
 
 ## Planned Changes
 
@@ -127,6 +131,8 @@ Timeout fields and defaults are: analysis 600 seconds, execution 600 seconds, ve
 |---|---|
 | OLS-3066 | Decouple reconcile latency: batch sandbox model, ConfigMap input, Result CR output via `oc`, watch-driven async, per-step timeout, ≤30s reconcile SLO. Subsumes OLS-2913 step-conditions. |
 | OLS-3743 | Wire Agent execution budgets and maximum turns into the batch sandbox; enforce layered agent and sandbox lifecycle deadlines. |
+| OLS-3298 | Add one-way per-run cancellation that yields `Failed / CancelledByUser` and hard-stops associated sandboxes. See `agentic-run-termination.md`. |
+| OLS-4018 | Make global suspension hard-stop all active managed sandboxes and remain Draining until teardown completes. See `agentic-run-termination.md`. |
 | OLS-2894 | Per-run approval overrides and namespace-scoped `ApprovalPolicy` |
 | OLS-2957 | Sandbox template management UX and CRD ergonomics |
 | ~~OLS-3038~~ | ~~TLS verification and network policy for agent traffic~~ No longer applicable — sandbox pods have no HTTP server (OLS-3066) |
