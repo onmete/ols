@@ -6,6 +6,7 @@ description: >
   Fetches all New-status bugs, analyzes them against the current .ai/spec/
   landscape, and presents a report with draft comments for human approval.
 argument-hint: "[OLS-XXXX]"
+disable-model-invocation: true
 ---
 
 # Triage New OLS Bugs

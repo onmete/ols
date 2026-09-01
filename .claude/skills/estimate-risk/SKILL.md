@@ -6,6 +6,7 @@ description: >
   adds the assessment as a comment. Use for on-demand assessment or
   after creating a new story.
 argument-hint: "OLS-1234 [OLS-1235 ...]"
+disable-model-invocation: true
 ---
 
 # Assess Risk Level for OLS Stories

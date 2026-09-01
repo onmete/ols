@@ -6,6 +6,7 @@ description: >
   tree, sets the SP field, and adds the estimate as a comment.
   Use for on-demand estimation or after creating a new story.
 argument-hint: "OLS-1234 [OLS-1235 ...]"
+disable-model-invocation: true
 ---
 
 # Estimate Story Points for OLS Stories
