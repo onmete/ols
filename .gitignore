@@ -13,5 +13,8 @@ ols-load-generator/
 # Local editor configuration
 .vscode/
 
+# Local Pi configuration and skills
+.pi/
+
 # Jira exports
 jira-*.md
