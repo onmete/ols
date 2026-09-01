@@ -10,5 +10,8 @@ lightspeed-service/
 lightspeed-team-harness/
 ols-load-generator/
 
+# Local editor configuration
+.vscode/
+
 # Jira exports
 jira-*.md
