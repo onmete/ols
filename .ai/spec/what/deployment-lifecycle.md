@@ -47,6 +47,7 @@ The Kubernetes operator that deploys and manages all OpenShift Lightspeed compon
 
 12. The operator watches annotated external resources (secrets, configmaps) for data changes.
 13. On change, the operator triggers a pod restart by updating the `ols.openshift.io/force-reload` annotation on the pod template with an RFC3339Nano timestamp.
+13a. **Credential hot-reload exception (OLS-3450):** When `spec.ols.credentialHotReload` is `true`, LLM credential secrets are **not annotated** with `ols.openshift.io/watcher: cluster` (and existing annotations are removed). The watcher never fires for these secrets, so no pod restart occurs on credential rotation. The service re-reads credentials from disk on each request instead. Non-LLM secrets (TLS, MCP headers, system) are always annotated and always restart. Changing `credentialsSecretRef.name` in the CR still triggers a restart (volume mount change).
 14. System resources are always watched: pull secret (`openshift-config/pull-secret`), service-ca certs, kube-root-ca.
 
 ### Status Reporting
@@ -91,7 +92,7 @@ Both paths enforce hostname verification. Disabling `check_hostname` is not perm
 
 ### Restart Trigger
 
-When an external resource changes, the operator sets `ols.openshift.io/force-reload` on the pod template to an RFC3339Nano timestamp, causing a rolling update.
+When an external resource changes, the operator sets `ols.openshift.io/force-reload` on the pod template to an RFC3339Nano timestamp, causing a rolling update. When `spec.ols.credentialHotReload` is enabled, LLM credential secrets are excluded from this mechanism — the service handles credential freshness via per-request file re-reads (OLS-3450).
 
 ### Operator Image Flags
 
@@ -116,5 +117,6 @@ The operator accepts image overrides at startup: `--service-image`, `--console-i
 | OLS-3799 | Add wait-for-rhokp init container to app-server deployment (when `!byokRAGOnly`) to block startup until RHOKP Solr is reachable. Service-side: replace `@cached_property` with lazy init + unlimited retry for `SolrHybridSearch` client. |
 | OLS-3697 | RHOKP standalone HTTPS cutover — sidecar replaced by `lightspeed-rhokp` Deployment/Service. ServiceMonitors added for RHOKP and MCP. |
 | OLS-3899 | Agentic operands (agentic console, alerts adapter, handoff) present only on OCP ≥ 5.0 (v2 bundle). OCP 4.x ships the v1 classic bundle with none of them. See decision 0037. |
+| OLS-3450 | Credential hot-reload: opt-in `spec.ols.credentialHotReload` flag skips LLM secret watching/restart; service re-reads credentials per request. See design spec `docs/superpowers/specs/2026-09-01-credential-hot-reload-design.md`. |
 | OLS-2991 | OCP 4.23 release artifacts — extend v1 bundle annotation to `v4.16-v4.23`, create `ols-fbc-v4-23` Konflux Application, add staging and prod ReleasePlans to `konflux-release-data`. |
 | OLS-2992 | OCP 5.0 release artifacts — create v2 bundle Konflux Application (`ols-bundle-v2`), create `ols-fbc-v5-0` FBC Application, add v2 ReleasePlans to `konflux-release-data`; inaugural agentic-stack release. |

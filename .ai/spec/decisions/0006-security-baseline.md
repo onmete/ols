@@ -9,7 +9,7 @@ Enterprise deployment in regulated environments requires defense-in-depth. Files
 
 ## Decision
 
-All API keys, passwords, and secrets are specified as filesystem paths in configuration — the service reads values at startup, never from plaintext config values. TLS 1.2 is the minimum version; TLS 1.0/1.1 and OldType profile are unconditionally prohibited. OpenShift service-CA is the default TLS certificate provider; custom certificates are optional via Secret reference. The system is FIPS-ready, using FIPS-validated cryptographic modules and deployable on FIPS-enabled clusters. When no TLS security profile is configured, the operator falls back to the cluster API server's TLS profile.
+All API keys, passwords, and secrets are specified as filesystem paths in configuration — the service reads values from disk, never from plaintext config values. By default credentials are read at startup; when credential hot-reload is enabled (`credential_hot_reload: true`, OLS-3450), LLM credentials are re-read from disk on each request so that secret rotation takes effect without a pod restart. TLS 1.2 is the minimum version; TLS 1.0/1.1 and OldType profile are unconditionally prohibited. OpenShift service-CA is the default TLS certificate provider; custom certificates are optional via Secret reference. The system is FIPS-ready, using FIPS-validated cryptographic modules and deployable on FIPS-enabled clusters. When no TLS security profile is configured, the operator falls back to the cluster API server's TLS profile.
 
 ## Alternatives Considered
 
@@ -20,7 +20,7 @@ All API keys, passwords, and secrets are specified as filesystem paths in config
 
 ## Consequences
 
-- Startup reads credential files and fails fast on missing paths
+- Startup reads credential files and fails fast on missing paths. With hot-reload enabled, credentials are also re-read per request; a read failure retains the last good value (graceful degradation)
 - OldType TLS profile rejected at config load time
 - PostgreSQL TLS is always service-CA with SSL mode `require` (not user-configurable)
 - TLS profile fallback inherits cluster-wide security posture
