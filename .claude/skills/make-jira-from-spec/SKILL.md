@@ -10,6 +10,7 @@ description: >-
   "create jira from spec", "update jira from spec", or wants
   to turn spec changes into tracked Jira work.
 argument-hint: "[PR-URL... | OLS-XXXX]"
+disable-model-invocation: true
 ---
 
 # make-jira-from-spec

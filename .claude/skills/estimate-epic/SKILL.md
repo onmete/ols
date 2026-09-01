@@ -5,6 +5,7 @@ description: >
   story points of their child issues. Can size specific Epics, or bulk-size
   all unsized Epics. Also invoked automatically after creating a new Epic.
 argument-hint: "[OLS-1234 ...] (omit to size all unsized Epics)"
+disable-model-invocation: true
 ---
 
 # Size Epics by Total Story Points
