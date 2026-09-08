@@ -19,6 +19,7 @@ An external event source creates an `AgenticRun` CR to initiate a workflow. Any 
 4. The event adapter uses one image with a separate Deployment + ConfigMap per domain (`source: jira` or `source: github`). See `lightspeed-team-harness/.ai/spec/what/event-adapter.md`.
 5. The Jira domain polls for issues in New and creates batch triage AgenticRuns (analysis + human-approved execution).
 6. The GitHub PR-review domain polls allowlisted repos and creates one AgenticRun per `repo + pull + headSha` after CI is terminal (all checks except Tide).
+6a. A second Jira watcher (`workflow: cve-autofixer`) creates 1:1 AgenticRuns for labeled Vulnerability issues (dep bump + fork PR; execution remains Manual). This workflow overrides stock analysis/execution **instructions** (coding agent, not kubectl-script replay). Cross-repo behavior: `what/cve-autofixer.md`. [OLS-3657] [PLANNED: OLS-3491]
 
 **Analysis-only writeback:** Some domains (e.g. GitHub PR review) perform external side effects during analysis (such as posting a Pull Request Review with event `COMMENT`) and return `actionRequired=false`, so the run terminates in `NoActionRequired` without an execution phase. This intentionally bypasses the propose → approve → execute gate for that domain and must be documented on the adapter; it does not change the CRD.
 
@@ -124,4 +125,4 @@ Context envelope in the `context` ConfigMap key varies by phase:
 | ~~OLS-3268~~ | ~~Analysis can signal `actionRequired=false` to auto-complete with `NoActionRequired` phase~~ [DONE: OLS-3268] |
 | ~~OLS-3295~~ | ~~Rename `Proposal` → `AgenticRun`, `ProposalApproval` → `AgenticRunApproval`, `ProposalResult` → `RemediationPlan` across CRDs, API, CLI, console, and docs~~ [DONE: OLS-3295] |
 | OLS-3441 | Script-grounded RBAC: analysis produces concrete bash scripts and derives RBAC from commands; execution dry-runs mutations before applying |
-| OLS-3657 | Event adapter: Jira-triggered AgenticRuns for automated bug triage (prototype in lightspeed-team-harness) |
+| OLS-3657 | Event adapter: Jira-triggered AgenticRuns for automated bug triage and CVE autofixer (prototype in lightspeed-team-harness). See `what/cve-autofixer.md`. |

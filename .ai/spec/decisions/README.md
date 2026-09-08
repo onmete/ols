@@ -61,3 +61,4 @@ Each file follows the naming convention `NNNN-slug.md` (e.g., `0001-langchain-ll
 | [0034](0034-hybrid-rag-tool-selection.md) | Dense + sparse retrieval for tool/skill filtering | service |
 | [0035](0035-remove-claude-sdk.md) | Remove proprietary binary from sandbox | sandbox |
 | [0036](0036-rhokp-standalone-deployment.md) | Standalone HTTPS, not sidecar | operator, service |
+| [0037](0037-cve-autofixer-system-instructions.md) | CVE autofixer persona on step instructions, not `spec.request` | team-harness, agentic-operator |
