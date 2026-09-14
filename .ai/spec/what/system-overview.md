@@ -44,6 +44,7 @@ These features span multiple repos and have dedicated spec files describing the 
 | Feature | Spec File | Repos Involved |
 |---|---|---|
 | Agentic run lifecycle | `what/agentic-runs.md` | alerts-adapter, agentic-operator, agentic-sandbox, agentic-console |
+| Agentic run termination | `what/agentic-run-termination.md` | agentic-operator, agentic-console |
 | RAG pipeline | `what/rag-pipeline.md` | rag-content, service, operator |
 | Deployment lifecycle | `what/deployment-lifecycle.md` | operator, service, console |
 | Query pipeline | `what/query-pipeline.md` | console, service, operator, rag-content |
@@ -52,6 +53,7 @@ These features span multiple repos and have dedicated spec files describing the 
 | Agentic security model | `what/agentic-security.md` | agentic-operator, agentic-console |
 | MCP tool RBAC resolution | `what/mcp-tool-rbac.md` | agentic-operator, agentic-sandbox, operator (ocp-mcp) |
 | Multicluster operations | `what/multicluster-ops.md` | hub, hub-ui, agentic-operator, alerts-adapter |
+| Alerts-adapter multicluster support | `what/alerts-adapter-multicluster.md` | alerts-adapter, hub, operator |
 | Multicluster testing | `what/multicluster-testing.md` | hub, agentic-operator, alerts-adapter, hub-ui |
 
 ## Planned Changes
