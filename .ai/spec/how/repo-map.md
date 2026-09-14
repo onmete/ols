@@ -170,4 +170,5 @@ These features span multiple repos. See the parent `what/` files for end-to-end 
 | Compliance audit logging | `what/audit-logging.md` | agentic-operator, agentic-sandbox, service, operator, agentic-console |
 | Temporary audit log storage | `what/templog.md` | lightspeed-otel-collector, operator, agentic-operator, agentic-sandbox |
 | Multicluster operations | `what/multicluster-ops.md` | hub, hub-ui, agentic-operator, alerts-adapter |
+| Alerts-adapter multicluster support | `what/alerts-adapter-multicluster.md` | alerts-adapter, hub, operator |
 | Multicluster testing | `what/multicluster-testing.md` | hub, agentic-operator, alerts-adapter, hub-ui |
